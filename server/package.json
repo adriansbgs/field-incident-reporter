@@ -1,0 +1,12 @@
+{
+  "name": "field-incident-reporter-server",
+  "private": true,
+  "scripts": {
+    "start": "json-server --watch db.json --port 3000 --host 0.0.0.0",
+    "slow": "json-server --watch db.json --port 3000 --host 0.0.0.0 --delay 800",
+    "reset": "node -e \"require('fs').copyFileSync('db.seed.json','db.json')\""
+  },
+  "devDependencies": {
+    "json-server": "0.17.4"
+  }
+}

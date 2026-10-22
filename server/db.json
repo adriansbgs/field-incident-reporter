@@ -1,0 +1,174 @@
+{
+  "incidents": [
+    {
+      "id": "d789c713-9549-4b39-96b7-8597db773a6d",
+      "title": "Pothole at loading dock entrance",
+      "description": "Roughly 40 cm across and deep enough to catch a pallet jack wheel. Coned off for now.",
+      "category": "ROAD_HAZARD",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "label": "Loading dock B",
+        "source": "MANUAL"
+      },
+      "photos": [],
+      "reportedBy": "tech-001",
+      "createdAt": "2026-10-21T01:42:10Z",
+      "updatedAt": "2026-10-21T01:42:10Z"
+    },
+    {
+      "id": "24f2d67b-518a-405b-afd8-8e75becaa72a",
+      "title": "Hydraulic press leaking fluid",
+      "description": "Puddle forming under the press at bay 3.",
+      "category": "EQUIPMENT_FAILURE",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "location": {
+        "latitude": -0.9471,
+        "longitude": 100.4172,
+        "label": "Bay 3, South Workshop",
+        "source": "GPS"
+      },
+      "photos": [
+        {
+          "id": "53943fcb-cf44-412a-9e64-41a9e5ec044d",
+          "fileName": "53943fcb-cf44-412a-9e64-41a9e5ec044d.jpg",
+          "source": "CAMERA",
+          "capturedAt": "2026-10-20T08:14:02Z",
+          "widthPx": 1080,
+          "heightPx": 1920
+        }
+      ],
+      "reportedBy": "tech-001",
+      "createdAt": "2026-10-20T08:15:30Z",
+      "updatedAt": "2026-10-20T08:15:30Z"
+    },
+    {
+      "id": "30f15c66-993c-44a5-8e26-983dd4cd3f11",
+      "title": "Cracked support beam",
+      "description": "Diagonal crack along the lower flange of the mezzanine beam. Area below cleared.",
+      "category": "STRUCTURAL",
+      "severity": "CRITICAL",
+      "status": "OPEN",
+      "location": {
+        "latitude": -0.9488,
+        "longitude": 100.4166,
+        "label": null,
+        "source": "GPS"
+      },
+      "photos": [],
+      "reportedBy": "tech-001",
+      "createdAt": "2026-10-19T23:58:03Z",
+      "updatedAt": "2026-10-19T23:58:03Z"
+    },
+    {
+      "id": "f05f9c07-7edb-427a-9a00-4e158ca5bb2a",
+      "title": "Loose handrail on stairwell",
+      "description": "Top two brackets have pulled out of the wall.",
+      "category": "OTHER",
+      "severity": "LOW",
+      "status": "IN_PROGRESS",
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "label": "Stairwell 4",
+        "source": "MANUAL"
+      },
+      "photos": [
+        {
+          "id": "d521195e-da37-4fe7-ad55-367dc14a3e1e",
+          "fileName": "d521195e-da37-4fe7-ad55-367dc14a3e1e.jpg",
+          "source": "CAMERA",
+          "capturedAt": "2026-10-18T05:46:33Z",
+          "widthPx": 1080,
+          "heightPx": 1920
+        }
+      ],
+      "reportedBy": "tech-001",
+      "createdAt": "2026-10-18T05:47:19Z",
+      "updatedAt": "2026-10-19T01:05:00Z"
+    },
+    {
+      "id": "f2ada2b8-0d37-4495-b80a-1ef4698530ec",
+      "title": "Sparking junction box",
+      "description": "Visible arcing when the conveyor starts. Breaker isolated, do not reset.",
+      "category": "ELECTRICAL",
+      "severity": "CRITICAL",
+      "status": "IN_PROGRESS",
+      "location": {
+        "latitude": -0.9502,
+        "longitude": 100.421,
+        "label": null,
+        "source": "GPS"
+      },
+      "photos": [
+        {
+          "id": "0e339ea5-3176-44e4-b028-13954518ef42",
+          "fileName": "0e339ea5-3176-44e4-b028-13954518ef42.jpg",
+          "source": "CAMERA",
+          "capturedAt": "2026-10-17T06:03:51Z",
+          "widthPx": 1080,
+          "heightPx": 1920
+        },
+        {
+          "id": "5d5c2b52-474d-415f-a52a-fe6785086beb",
+          "fileName": "5d5c2b52-474d-415f-a52a-fe6785086beb.jpg",
+          "source": "GALLERY",
+          "capturedAt": "2026-10-16T22:10:05Z",
+          "widthPx": 4032,
+          "heightPx": 3024
+        }
+      ],
+      "reportedBy": "tech-001",
+      "createdAt": "2026-10-17T06:05:44Z",
+      "updatedAt": "2026-10-18T02:30:00Z"
+    },
+    {
+      "id": "d555a175-030f-4126-bac3-b17326404ea7",
+      "title": "Burst pipe in plant room",
+      "description": "Cold water main split at the elbow joint. Valve closed, floor drained.",
+      "category": "PLUMBING",
+      "severity": "HIGH",
+      "status": "RESOLVED",
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "label": "Plant room 2",
+        "source": "MANUAL"
+      },
+      "photos": [
+        {
+          "id": "5b17abcb-3c95-4994-9d28-9e368e86a353",
+          "fileName": "5b17abcb-3c95-4994-9d28-9e368e86a353.jpg",
+          "source": "GALLERY",
+          "capturedAt": "2026-10-15T03:12:40Z",
+          "widthPx": 4032,
+          "heightPx": 3024
+        }
+      ],
+      "reportedBy": "tech-001",
+      "createdAt": "2026-10-15T03:20:12Z",
+      "updatedAt": "2026-10-16T09:45:00Z"
+    },
+    {
+      "id": "1e5bab6f-25e7-4f57-8558-6f8b7048b155",
+      "title": "Flickering corridor lights",
+      "description": "Three fittings flicker on and off. Starter units replaced.",
+      "category": "ELECTRICAL",
+      "severity": "LOW",
+      "status": "RESOLVED",
+      "location": {
+        "latitude": null,
+        "longitude": null,
+        "label": "Corridor C, level 2",
+        "source": "MANUAL"
+      },
+      "photos": [],
+      "reportedBy": "tech-001",
+      "createdAt": "2026-10-14T07:31:26Z",
+      "updatedAt": "2026-10-15T00:12:00Z"
+    }
+  ]
+}
