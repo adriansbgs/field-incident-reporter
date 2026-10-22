@@ -9,6 +9,7 @@ import com.incidentreporter.field.data.remote.AppJson
 import com.incidentreporter.field.data.remote.IncidentApi
 import com.incidentreporter.field.data.repository.IncidentRepositoryImpl
 import com.incidentreporter.field.data.sync.SyncScheduler
+import com.incidentreporter.field.data.sync.WorkManagerSyncScheduler
 import com.incidentreporter.field.domain.repository.IncidentRepository
 import dagger.Module
 import dagger.Provides
@@ -51,5 +52,5 @@ object AppModule {
     fun clock(): Clock = Clock.systemUTC()
 
     @Provides
-    fun syncScheduler(): SyncScheduler = SyncScheduler {} 
+    fun syncScheduler(impl: WorkManagerSyncScheduler): SyncScheduler = impl
 }

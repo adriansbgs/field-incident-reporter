@@ -51,6 +51,7 @@ class IncidentRepositoryImpl @Inject constructor(
         dao.observe(id).map { it?.toDomain(photoStore.dir) }
 
     override suspend fun refresh(): Result<Unit> = try {
+        syncScheduler.requestSync() // a pull also pushes: at launch, and on pull-to-refresh without waiting out a backoff
         // Read before the fetch: a row still owed to the server when we asked stays protected,
         // even if its upload lands while our response is in flight.
         val before = dao.localMeta()

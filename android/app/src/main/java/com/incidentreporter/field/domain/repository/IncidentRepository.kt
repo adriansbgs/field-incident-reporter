@@ -15,7 +15,7 @@ interface IncidentRepository {
     /** One incident, drafts included. Emits null when it doesn't exist. */
     fun observeIncident(id: String): Flow<Incident?>
 
-    /** Pulls the server's list into Room. A failure is always an AppError, and the cached rows stay. */
+    /** Pulls the server's list into Room, and asks for waiting changes to upload. A failure is always an AppError, and the cached rows stay. */
     suspend fun refresh(): Result<Unit>
 
     /** Starts a new report as a hidden draft. Other drafts, and photo files nothing points at, are purged first. */

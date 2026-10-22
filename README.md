@@ -48,6 +48,16 @@ cd android
 - **A new report starts as a hidden draft, and there's only ever one.** The draft row exists from the first photo, so a shot is never held only in memory. It never appears in the list and is never sent. Submitting turns it into a pending report in one transaction, and a second tap finds nothing left to submit. Starting another report discards the abandoned draft and any photo file no row points at.
 - **The app owns photo bytes from the moment they exist.** The camera writes straight into app storage under the photo's final id, and a gallery pick is copied in, so the original can be deleted without breaking the report. Database changes commit first and files are deleted only afterwards, because a rolled-back transaction can't bring a deleted file back.
 - **Photos are encouraged, never required.** Validation has no photo rule. A device with the camera disabled by policy, a fault with nothing to see, or a hazard too dangerous to approach must still produce a report. The list marks a report with "no photos" so triage can see the evidence is missing.
+- **One WorkManager job uploads every queued change, one record at a time.**
+  - A record moves from Pending to Syncing to Synced.
+  - Offline, it stays Pending. WorkManager's network constraint resumes the job when the signal returns, so there's no connectivity listener.
+  - A server error retries with exponential backoff from 10 seconds, and the record becomes Failed after five tries. A rejected request fails at once.
+  - Sync is requested after every local change and on every pull, including at launch.
+  - The worker sends a snapshot and records the result against the live row, so an edit made during an upload is queued, not lost.
+- **A create is safe to retry.** If the server stored a report but the response was lost, the retry finds the record with a GET and finishes with a PATCH. A second POST would hit json-server's duplicate-id 500 and mark a successful upload Failed.
+- **Conflicts are caught by reading before writing.** json-server has no ETags, so an update first GETs the record and compares its `updatedAt` with the last value the phone saw from the server. If someone else changed it, the record is marked Changed on server and nothing is overwritten. The technician's edit stays on the phone until they decide. A real API would send `If-Match` with an ETag and get a 412 back: one round trip, and no gap between the read and the write.
+- **A new sync request replaces a waiting one (`ExistingWorkPolicy.REPLACE`).** Pull-to-refresh uploads now instead of sitting out a backoff delay. Cancelling a run mid-upload is safe: the create is idempotent, and an interrupted record is picked up again.
+- **The worker gets its dependencies from a Hilt `@EntryPoint`, not `@HiltWorker`.** WorkManager's default factory builds it, so one worker needs no custom `WorkerFactory`, no manifest override of WorkManager's startup and no extra dependency.
 - **Light theme only, applied unconditionally.** Dark mode is a non-goal. Rather than ship a half-built dark palette, a phone in dark mode gets the light app with dark status-bar icons. Every colour comes from one theme file, so adding a dark scheme later means changing one palette, not every screen.
 
 ## Non-goals

@@ -40,6 +40,7 @@ class IncidentRepositoryRefreshTest {
     val tmp = TemporaryFolder()
 
     private val api = FakeIncidentApi()
+    private val scheduler = FakeSyncScheduler()
     private lateinit var db: FieldDatabase
     private lateinit var dao: IncidentDao
     private lateinit var photoDir: File
@@ -52,7 +53,7 @@ class IncidentRepositoryRefreshTest {
         db = Room.inMemoryDatabaseBuilder(context, FieldDatabase::class.java).build()
         dao = db.incidentDao()
         photoDir = tmp.newFolder("photos")
-        repository = IncidentRepositoryImpl(db, api, PhotoStore(photoDir, context.contentResolver, clock), clock, FakeSyncScheduler())
+        repository = IncidentRepositoryImpl(db, api, PhotoStore(photoDir, context.contentResolver, clock), clock, scheduler)
     }
 
     @After
@@ -83,6 +84,15 @@ class IncidentRepositoryRefreshTest {
 
         assertTrue(error is AppError.Network)
         assertEquals(listOf("a"), repository.observeIncidents().first().map { it.id })
+    }
+
+    @Test
+    fun refresh_requestsSync_evenWhenTheFetchFails() = runTest {
+        api.failNext = IOException("offline")
+
+        repository.refresh()
+
+        assertEquals(1, scheduler.calls) // waiting changes go out once the network is back
     }
 
     @Test

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
+import com.incidentreporter.field.domain.model.SyncState
 import com.incidentreporter.field.domain.usecase.LocalMeta
 import kotlinx.coroutines.flow.Flow
 
@@ -54,4 +55,16 @@ interface IncidentDao {
 
     @Query("DELETE FROM photos WHERE id = :id")
     suspend fun deletePhoto(id: String)
+
+    /** What the phone owes the server, oldest change first. FAILED and STALE rows wait for the user. */
+    @Transaction
+    @Query("SELECT * FROM incidents WHERE isDraft = 0 AND pendingOp != 'NONE' AND syncState NOT IN ('FAILED', 'STALE') ORDER BY updatedAt")
+    suspend fun syncQueue(): List<IncidentWithPhotos>
+
+    // The worker writes only sync columns, so an edit made during an upload is never overwritten.
+    @Query("UPDATE incidents SET syncState = 'SYNCING', lastSyncAttemptAt = :at WHERE id = :id")
+    suspend fun markSyncing(id: String, at: Long)
+
+    @Query("UPDATE incidents SET syncState = :state, syncAttemptCount = :attempts, lastSyncError = :error WHERE id = :id")
+    suspend fun markSyncResult(id: String, state: SyncState, attempts: Int, error: String?)
 }
