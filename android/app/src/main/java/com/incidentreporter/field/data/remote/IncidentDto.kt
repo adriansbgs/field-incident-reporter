@@ -52,4 +52,5 @@ data class IncidentPatchDto(
 val AppJson = Json {
     ignoreUnknownKeys = true // a hand-edited db.json may carry extra keys
     explicitNulls = false    // omit nulls when sending
+    encodeDefaults = true    // send OPEN, MEDIUM and the rest too, so the server holds complete records
 }

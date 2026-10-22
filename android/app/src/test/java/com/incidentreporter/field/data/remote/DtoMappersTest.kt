@@ -87,4 +87,20 @@ class DtoMappersTest {
         }
         assertTrue(patch.contains("2026-10-20T09:00:00Z")) // updatedAt travels with every edit
     }
+
+    @Test
+    fun wireFormat_sendsFieldsThatEqualTheirDefaults() {
+        // An OPEN, MEDIUM, OTHER report with a gallery photo: every one of those values is also a DTO default.
+        val plain = IncidentDto(
+            id = "x",
+            title = "T",
+            photos = listOf(PhotoDto(id = "p", fileName = "p.jpg", capturedAt = "2026-10-20T08:14:02Z")),
+            createdAt = "2026-10-20T08:15:30Z",
+            updatedAt = "2026-10-20T08:15:30Z",
+        )
+        val sent = AppJson.encodeToString(IncidentDto.serializer(), plain)
+        listOf("\"status\":\"OPEN\"", "\"severity\":\"MEDIUM\"", "\"category\":\"OTHER\"", "\"reportedBy\":\"tech-001\"", "\"source\":\"GALLERY\"").forEach {
+            assertTrue("POST body is missing $it", sent.contains(it))
+        }
+    }
 }
