@@ -54,6 +54,7 @@ data class IncidentListUiState(
 
 sealed interface ListEvent {
     data class ShowMessage(@StringRes val text: Int) : ListEvent
+    data class OpenForm(val incidentId: String) : ListEvent
 }
 
 @HiltViewModel
@@ -85,6 +86,11 @@ class IncidentListViewModel @Inject constructor(
     fun onClearFilters() = local.update { it.copy(statusFilter = null, severityFilter = null) }
 
     fun onToggleFilters() = local.update { it.copy(filtersVisible = !it.filtersVisible) }
+
+    /** Until the camera screen exists, a new report opens the form straight away. */
+    fun onReportClicked() {
+        viewModelScope.launch { _events.send(ListEvent.OpenForm(repository.createDraft())) }
+    }
 
     fun onRefresh() {
         if (local.value.isRefreshing) return

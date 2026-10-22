@@ -58,6 +58,14 @@ cd android
 - **Conflicts are caught by reading before writing.** json-server has no ETags, so an update first GETs the record and compares its `updatedAt` with the last value the phone saw from the server. If someone else changed it, the record is marked Changed on server and nothing is overwritten. The technician's edit stays on the phone until they decide. "Use server version" takes the server's copy. Editing again is a deliberate overwrite, so last write wins, but only by choice. A real API would send `If-Match` with an ETag and get a 412 back: one round trip, and no gap between the read and the write.
 - **A new sync request replaces a waiting one (`ExistingWorkPolicy.REPLACE`).** Pull-to-refresh uploads now instead of sitting out a backoff delay. Cancelling a run mid-upload is safe: the create is idempotent, and an interrupted record is picked up again.
 - **The worker gets its dependencies from a Hilt `@EntryPoint`, not `@HiltWorker`.** WorkManager's default factory builds it, so one worker needs no custom `WorkerFactory`, no manifest override of WorkManager's startup and no extra dependency.
+- **Every control is at least 48dp, for gloved hands.**
+  - Category is six chips, all visible, one tap each, instead of a dropdown.
+  - Severity is a four-way segmented row.
+  - Submit is a 54dp button pinned above the keyboard, so it never takes a scroll while typing.
+- **Gallery photos come from the system photo picker (`PickVisualMedia`).** It needs no storage permission, shows only images, and falls back to `ACTION_GET_CONTENT` on older phones. The picked file is copied in at once, so the report never depends on a link that can expire.
+- **A half-filled form survives the app being killed.** Android may kill a backgrounded app to free memory. The typed fields are saved to `SavedStateHandle` on every change, and the photos are already in Room. A technician who switches to a call and comes back loses nothing.
+- **Photos are fixed once a report is submitted.** Editing covers text, category, severity and location. Evidence can't be swapped after the fact, the PATCH body carries no photos, and edits need no second draft. Edit mode shows the photos read-only.
+- **Thumbnails have no delete button.** A 48dp × on a 76dp thumbnail would delete evidence with one gloved tap. A tap opens a full-screen review instead, and Delete is there.
 - **Light theme only, applied unconditionally.** Dark mode is a non-goal. Rather than ship a half-built dark palette, a phone in dark mode gets the light app with dark status-bar icons. Every colour comes from one theme file, so adding a dark scheme later means changing one palette, not every screen.
 
 ## Non-goals

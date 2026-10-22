@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,9 +14,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -60,6 +63,7 @@ import com.incidentreporter.field.domain.model.SyncState
 @Composable
 fun IncidentListScreen(
     onOpen: (id: String) -> Unit,
+    onOpenForm: (id: String) -> Unit,
     viewModel: IncidentListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -70,6 +74,7 @@ fun IncidentListScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is ListEvent.ShowMessage -> snackbarHostState.showSnackbar(resources.getString(event.text))
+                is ListEvent.OpenForm -> onOpenForm(event.incidentId)
             }
         }
     }
@@ -78,6 +83,7 @@ fun IncidentListScreen(
         state = state,
         snackbarHostState = snackbarHostState,
         onOpen = onOpen,
+        onReport = viewModel::onReportClicked,
         onToggleFilters = viewModel::onToggleFilters,
         onStatusFilter = viewModel::onStatusFilter,
         onSeverityFilter = viewModel::onSeverityFilter,
@@ -93,6 +99,7 @@ private fun IncidentListScreen(
     state: IncidentListUiState,
     snackbarHostState: SnackbarHostState,
     onOpen: (id: String) -> Unit,
+    onReport: () -> Unit,
     onToggleFilters: () -> Unit,
     onStatusFilter: (Status) -> Unit,
     onSeverityFilter: (Severity) -> Unit,
@@ -116,6 +123,14 @@ private fun IncidentListScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onReport,
+                // The FAB hides its text from TalkBack, so the icon carries the button's name.
+                icon = { Icon(Icons.Outlined.PhotoCamera, contentDescription = stringResource(R.string.list_report)) },
+                text = { Text(stringResource(R.string.list_report)) },
+            )
+        },
     ) { padding ->
         Column(Modifier.padding(padding)) {
             if (state.pendingCount > 0) PendingBanner(state.pendingCount)
@@ -143,8 +158,10 @@ private fun IncidentListScreen(
                         actionLabel = stringResource(R.string.list_clear_filters),
                         onAction = onClearFilters,
                     )
-                    ListContent.Populated -> LazyColumn {
-                        items(state.incidents, key = { it.id }) { incident ->
+                    // Bottom padding, so the last row can scroll out from under the button.
+                    ListContent.Populated -> LazyColumn(contentPadding = PaddingValues(bottom = 88.dp)) {
+                        // No item keys: a keyed list stays anchored on its old first row, hiding a new report above it.
+                        items(state.incidents) { incident ->
                             IncidentRow(incident, onClick = { onOpen(incident.id) })
                         }
                     }
@@ -244,6 +261,7 @@ private fun ListPreview(state: IncidentListUiState) {
             state = state,
             snackbarHostState = remember { SnackbarHostState() },
             onOpen = {},
+            onReport = {},
             onToggleFilters = {},
             onStatusFilter = {},
             onSeverityFilter = {},

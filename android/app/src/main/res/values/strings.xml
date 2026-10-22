@@ -41,6 +41,7 @@
     <string name="list_error_body">Check your connection and try again.</string>
     <string name="list_retry">Retry</string>
     <string name="list_refresh_failed">Couldn’t refresh. Showing incidents saved on this device.</string>
+    <string name="list_report">Report incident</string>
 
     <!-- Detail -->
     <string name="detail_photo">Photo %1$d of %2$d</string>
@@ -54,4 +55,39 @@
     <string name="detail_delete">Delete</string>
     <string name="detail_read_only">Read-only — only open incidents can be edited or deleted.</string>
     <string name="detail_not_found">This incident no longer exists.</string>
+
+    <!-- Form -->
+    <string name="form_title_new">New report</string>
+    <string name="form_title_edit">Edit report</string>
+    <string name="form_photos">Photos</string>
+    <string name="form_photo_count">%1$d of %2$d</string>
+    <string name="form_photo">Photo %1$d of %2$d, opens review</string>
+    <string name="form_add_photo">Add photo from gallery</string>
+    <string name="form_field_title">Title</string>
+    <string name="form_counter">%1$d/%2$d</string>
+    <string name="form_field_description">Description</string>
+    <string name="form_field_category">Category</string>
+    <string name="form_field_severity">Severity</string>
+    <string name="form_field_location">Location</string>
+    <string name="form_location_placeholder">Describe the place, e.g. Bay 3, South Workshop</string>
+    <string name="form_helper">Saved on your device first. Uploads on its own when you have signal.</string>
+    <string name="form_submit">Submit report</string>
+    <string name="form_save">Save changes</string>
+    <string name="form_error_title_required">Add a short title</string>
+    <string name="form_error_title_too_long">Keep the title under 80 characters</string>
+    <string name="form_error_description_too_long">Description is limited to 1000 characters</string>
+    <string name="form_error_category_required">Choose a category</string>
+    <string name="form_error_location_required">Add a location — GPS or a description of the place</string>
+    <string name="form_error_too_many_photos">A report holds at most 5 photos</string>
+    <string name="form_not_editable">This incident can no longer be edited.</string>
+    <string name="form_photo_failed">Couldn’t add that photo.</string>
+    <string name="discard_title">Discard this report?</string>
+    <string name="discard_body">Photos and details you entered will be deleted.</string>
+    <string name="discard_confirm">Discard</string>
+    <string name="discard_keep">Keep editing</string>
+
+    <!-- Photo review -->
+    <string name="review_photo">Photo under review</string>
+    <string name="review_close">Close</string>
+    <string name="review_delete">Delete photo</string>
 </resources>
