@@ -67,4 +67,8 @@ interface IncidentDao {
 
     @Query("UPDATE incidents SET syncState = :state, syncAttemptCount = :attempts, lastSyncError = :error WHERE id = :id")
     suspend fun markSyncResult(id: String, state: SyncState, attempts: Int, error: String?)
+
+    /** The server's newer time becomes what the phone has seen, so editing again afterwards is a deliberate overwrite. */
+    @Query("UPDATE incidents SET syncState = 'STALE', serverUpdatedAt = :serverUpdatedAt WHERE id = :id")
+    suspend fun markStale(id: String, serverUpdatedAt: Long)
 }

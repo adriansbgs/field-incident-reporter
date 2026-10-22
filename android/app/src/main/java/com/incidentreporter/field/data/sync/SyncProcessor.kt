@@ -53,7 +53,7 @@ class SyncProcessor @Inject constructor(
                 PendingOp.UPDATE -> {
                     val remoteUpdatedAt = Instant.parse(api.get(sent.id).updatedAt).toEpochMilli()
                     if (SyncDecision.isStale(remoteUpdatedAt, sent.serverUpdatedAt, sent.updatedAt)) {
-                        dao.markSyncResult(sent.id, SyncState.STALE, attempts = 0, error = null)
+                        dao.markStale(sent.id, remoteUpdatedAt)
                         SyncState.STALE
                     } else {
                         api.update(sent.id, sent.toPatch())

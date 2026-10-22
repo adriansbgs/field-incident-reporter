@@ -185,4 +185,20 @@ class SyncProcessorTest {
 
         assertNull(repository.observeIncident("a").first())
     }
+
+    @Test
+    fun staleRow_reEdited_overwritesServer() = runTest {
+        // Editing again after seeing "Changed on server" is a deliberate choice, so the technician's version wins.
+        syncedThenEdited("a")
+        api.rows["a"] = api.rows["a"]!!.copy(updatedAt = "2030-01-01T00:00:00Z")
+        processor.syncPending()
+        assertEquals(SyncState.STALE, state("a"))
+
+        clock.advance(1_000)
+        repository.update("a", input.copy(title = "Mine, on purpose"))
+        processor.syncPending()
+
+        assertEquals(SyncState.SYNCED, state("a"))
+        assertEquals("Mine, on purpose", api.rows["a"]!!.title)
+    }
 }
