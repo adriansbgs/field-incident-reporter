@@ -37,6 +37,8 @@ cd android
 - **KSP, not kapt.** AGP 9 compiles Kotlin itself and has no place for kapt. KSP also runs Hilt and Room's code generation faster.
 - **compileSdk 37, targetSdk 36.** The current AndroidX releases compile against API 37. Runtime behaviour stays opted in at 36.
 - **Cleartext HTTP in debug builds only.** json-server speaks plain HTTP, so the exception lives in `src/debug/AndroidManifest.xml`. Release builds stay HTTPS-only.
+- **One pending change per incident, not an outbox table.** Two offline edits collapse into one, and a delete replaces a pending edit. Deleting a report that never reached the server is a local-only delete with no network call. The server only ever needs an incident's latest state. Keeping one change per record removes a whole class of ordering bugs that a general outbox would have to solve.
+- **Client-generated UUIDs.** A report created offline has its permanent id from the first moment. There's no temporary id to rewrite when it reaches the server, which accepts the id the app sends.
 - **Light theme only, applied unconditionally.** Dark mode is a non-goal. Rather than ship a half-built dark palette, a phone in dark mode gets the light app with dark status-bar icons. Every colour comes from one theme file, so adding a dark scheme later means changing one palette, not every screen.
 
 ## Non-goals
