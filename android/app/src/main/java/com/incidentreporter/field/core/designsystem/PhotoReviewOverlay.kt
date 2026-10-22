@@ -48,7 +48,7 @@ fun PhotoReviewOverlay(photo: Photo, onClose: () -> Unit, onDelete: (() -> Unit)
             )
             IconButton(
                 onClick = onClose,
-                colors = IconButtonDefaults.iconButtonColors(containerColor = Scrim, contentColor = Color.White),
+                colors = IconButtonDefaults.iconButtonColors(containerColor = FieldPalette.cameraPill, contentColor = Color.White),
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
             ) {
                 Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.review_close))
@@ -56,7 +56,7 @@ fun PhotoReviewOverlay(photo: Photo, onClose: () -> Unit, onDelete: (() -> Unit)
             if (onDelete != null) {
                 Button(
                     onClick = onDelete,
-                    colors = ButtonDefaults.buttonColors(containerColor = Scrim, contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(containerColor = FieldPalette.cameraPill, contentColor = Color.White),
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(24.dp)
@@ -71,9 +71,6 @@ fun PhotoReviewOverlay(photo: Photo, onClose: () -> Unit, onDelete: (() -> Unit)
         }
     }
 }
-
-/** The camera's dark fill for controls over an image: readable on any photo, bright or dark. */
-private val Scrim = Color.Black.copy(alpha = 0.62f)
 
 @Preview
 @Composable

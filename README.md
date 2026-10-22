@@ -66,6 +66,15 @@ cd android
 - **A half-filled form survives the app being killed.** Android may kill a backgrounded app to free memory. The typed fields are saved to `SavedStateHandle` on every change, and the photos are already in Room. A technician who switches to a call and comes back loses nothing.
 - **Photos are fixed once a report is submitted.** Editing covers text, category, severity and location. Evidence can't be swapped after the fact, the PATCH body carries no photos, and edits need no second draft. Edit mode shows the photos read-only.
 - **Thumbnails have no delete button.** A 48dp × on a 76dp thumbnail would delete evidence with one gloved tap. A tap opens a full-screen review instead, and Delete is there.
+- **The camera permission is asked in three stages.**
+  - The first time, the system prompt appears straight away, because the technician has just asked for the camera.
+  - After one denial, the camera screen explains why a photo matters and offers the prompt again.
+  - After a final denial, it says camera access is off and links to the app's Settings page. Coming back with access switched on shows the viewfinder without another prompt.
+  - At every stage the gallery button still works, so a denied camera never blocks a report.
+- **Photos are taken in the app with CameraX, not handed to the system camera app, and the choice is contained.**
+  - The technician never leaves the report. Each shot is written straight into app storage under its final id, and behaviour doesn't depend on whichever camera app the phone ships with.
+  - The scope is deliberately small: a viewfinder and still capture at about Full HD, with no image analysis, zoom or tap-to-focus.
+  - Capture touches one screen and one class, and `PhotoStore` takes a camera shot and a gallery pick the same way. Swapping to `ActivityResultContracts.TakePicture` would change nothing downstream.
 - **Light theme only, applied unconditionally.** Dark mode is a non-goal. Rather than ship a half-built dark palette, a phone in dark mode gets the light app with dark status-bar icons. Every colour comes from one theme file, so adding a dark scheme later means changing one palette, not every screen.
 
 ## Non-goals

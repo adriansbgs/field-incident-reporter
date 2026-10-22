@@ -49,4 +49,14 @@ object FieldPalette {
     val bannerContainer = Color(0xFFE6EDF2)
     val bannerText = Color(0xFF163F58)
     val bannerIcon = Color(0xFF194A66)
+
+    // Camera chrome, drawn over the live viewfinder
+    val cameraTopScrim = Color(0x8C000000)      // 55% black
+    val cameraBottomScrim = Color(0x94000000)   // 58% black
+    val cameraPill = Color(0x9E000000)          // 62% black: the hint pill, and buttons over a photo
+    val cameraHintText = Color(0xFFF2F0ED)
+    val cameraControlFill = Color(0x1AFFFFFF)   // 10% white
+    val cameraControlStroke = Color(0x6BFFFFFF) // 42% white
+    val cameraShutterRing = Color(0xEBFFFFFF)   // 92% white
+    val cameraOnWhite = Color(0xFF141617)       // text on a white camera button
 }

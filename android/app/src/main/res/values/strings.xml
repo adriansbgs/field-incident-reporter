@@ -70,7 +70,7 @@
     <string name="form_photos">Photos</string>
     <string name="form_photo_count">%1$d of %2$d</string>
     <string name="form_photo">Photo %1$d of %2$d, opens review</string>
-    <string name="form_add_photo">Add photo from gallery</string>
+    <string name="form_add_photo">Add photo</string>
     <string name="form_field_title">Title</string>
     <string name="form_counter">%1$d/%2$d</string>
     <string name="form_field_description">Description</string>
@@ -98,4 +98,17 @@
     <string name="review_photo">Photo under review</string>
     <string name="review_close">Close</string>
     <string name="review_delete">Delete photo</string>
+
+    <!-- Camera -->
+    <string name="photo_take">Take photo</string>
+    <string name="photo_from_gallery">Choose from gallery</string>
+    <string name="capture_close">Close camera</string>
+    <string name="capture_hint">Shoot first — details come next</string>
+    <string name="capture_failed">Couldn’t take the photo. Try again.</string>
+    <string name="capture_rationale_title">A photo is the evidence for your report</string>
+    <string name="capture_rationale_body">Allow camera access to take it here, or pick one from your gallery.</string>
+    <string name="capture_allow">Allow camera</string>
+    <string name="capture_denied_title">Camera access is off</string>
+    <string name="capture_denied_body">A photo is the evidence for your report. Turn camera access on in Settings, or attach one from your gallery.</string>
+    <string name="capture_open_settings">Open settings</string>
 </resources>

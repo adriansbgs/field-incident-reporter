@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,7 +29,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -83,6 +88,7 @@ import com.incidentreporter.field.domain.usecase.ValidationError
 fun IncidentFormScreen(
     onDone: () -> Unit,
     onBack: () -> Unit,
+    onTakePhoto: () -> Unit,
     viewModel: IncidentFormViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -90,9 +96,10 @@ fun IncidentFormScreen(
     val resources = LocalResources.current
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
     // The system photo picker needs no storage permission, and returns one image or nothing.
-    val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) viewModel.onPhotoPicked(uri.toString())
-    }
+    val pickPhoto =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) viewModel.onPhotoPicked(uri.toString())
+        }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -123,7 +130,8 @@ fun IncidentFormScreen(
         onSeverityChange = viewModel::onSeverityChange,
         onLocationLabelChange = viewModel::onLocationLabelChange,
         onFieldBlur = viewModel::onFieldBlur,
-        onAddPhoto = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        onTakePhoto = onTakePhoto,
+        onPickPhoto = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
         onReview = viewModel::onReview,
         onSubmit = viewModel::onSubmit,
     )
@@ -164,7 +172,8 @@ private fun IncidentFormScreen(
     onSeverityChange: (Severity) -> Unit,
     onLocationLabelChange: (String) -> Unit,
     onFieldBlur: (FormField) -> Unit,
-    onAddPhoto: () -> Unit,
+    onTakePhoto: () -> Unit,
+    onPickPhoto: () -> Unit,
     onReview: (Photo) -> Unit,
     onSubmit: () -> Unit,
 ) {
@@ -176,7 +185,10 @@ private fun IncidentFormScreen(
                 title = { Text(stringResource(if (create) R.string.form_title_new else R.string.form_title_edit)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
                 },
             )
@@ -194,7 +206,13 @@ private fun IncidentFormScreen(
                     .padding(16.dp),
             ) {
                 if (create || state.photos.isNotEmpty()) {
-                    PhotoSection(state.photos, canAdd = create && state.photos.size < MAX_PHOTOS, onAddPhoto, onReview)
+                    PhotoSection(
+                        state.photos,
+                        canAdd = create && state.photos.size < MAX_PHOTOS,
+                        onTakePhoto,
+                        onPickPhoto,
+                        onReview
+                    )
                 }
                 val titleFocus = remember { FocusRequester() }
                 if (create) LaunchedEffect(Unit) { titleFocus.requestFocus() }
@@ -204,7 +222,11 @@ private fun IncidentFormScreen(
                     label = R.string.form_field_title,
                     error = state.errors[FormField.TITLE],
                     onBlur = { onFieldBlur(FormField.TITLE) },
-                    supporting = stringResource(R.string.form_counter, fields.title.length, MAX_TITLE_LENGTH),
+                    supporting = stringResource(
+                        R.string.form_counter,
+                        fields.title.length,
+                        MAX_TITLE_LENGTH
+                    ),
                     modifier = Modifier.focusRequester(titleFocus),
                 )
                 FormTextField(
@@ -233,11 +255,23 @@ private fun IncidentFormScreen(
 
 /** A labelled block of the form, with an optional note on the right of the label. */
 @Composable
-private fun Section(@StringRes label: Int, note: String? = null, content: @Composable ColumnScope.() -> Unit) {
+private fun Section(
+    @StringRes label: Int,
+    note: String? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row {
-            Text(stringResource(label), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            if (note != null) Text(note, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                stringResource(label),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f)
+            )
+            if (note != null) Text(
+                note,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         content()
     }
@@ -245,27 +279,69 @@ private fun Section(@StringRes label: Int, note: String? = null, content: @Compo
 
 /** No remove button on a thumbnail: a gloved tap opens the review overlay instead of deleting evidence. */
 @Composable
-private fun PhotoSection(photos: List<Photo>, canAdd: Boolean, onAdd: () -> Unit, onReview: (Photo) -> Unit) {
-    Section(R.string.form_photos, note = stringResource(R.string.form_photo_count, photos.size, MAX_PHOTOS)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+private fun PhotoSection(
+    photos: List<Photo>,
+    canAdd: Boolean,
+    onTakePhoto: () -> Unit,
+    onPickPhoto: () -> Unit,
+    onReview: (Photo) -> Unit,
+) {
+    Section(
+        R.string.form_photos,
+        note = stringResource(R.string.form_photo_count, photos.size, MAX_PHOTOS)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.horizontalScroll(rememberScrollState())
+        ) {
             photos.forEachIndexed { index, photo ->
                 PhotoThumb(
                     file = photo.file,
                     size = 76.dp,
-                    contentDescription = stringResource(R.string.form_photo, index + 1, photos.size),
+                    contentDescription = stringResource(
+                        R.string.form_photo,
+                        index + 1,
+                        photos.size
+                    ),
                     modifier = Modifier.clickable { onReview(photo) },
                 )
             }
-            if (canAdd) {
-                OutlinedButton(
-                    onClick = onAdd,
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(0.dp),
-                    modifier = Modifier.size(76.dp),
-                ) {
-                    Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.form_add_photo), modifier = Modifier.size(24.dp))
-                }
-            }
+            if (canAdd) AddPhotoButton(onTakePhoto, onPickPhoto)
+
+        }
+    }
+}
+
+/** The add tile offers both ways in: the camera, or a photo already in the gallery. */
+@Composable
+private fun AddPhotoButton(onTakePhoto: () -> Unit, onPickPhoto: () -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(
+            onClick = { open = true },
+            shape = RoundedCornerShape(10.dp),
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.size(76.dp),
+        ) {
+            Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.form_add_photo), modifier = Modifier.size(24.dp))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.photo_take)) },
+                leadingIcon = { Icon(Icons.Outlined.PhotoCamera, contentDescription = null) },
+                onClick = {
+                    open = false
+                    onTakePhoto()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.photo_from_gallery)) },
+                leadingIcon = { Icon(Icons.Outlined.PhotoLibrary, contentDescription = null) },
+                onClick = {
+                    open = false
+                    onPickPhoto()
+                },
+            )
         }
     }
 }
@@ -307,7 +383,11 @@ private fun FormTextField(
 
 /** All six categories visible, one tap each, two to a row. */
 @Composable
-private fun CategoryChips(selected: Category?, error: ValidationError?, onSelect: (Category) -> Unit) {
+private fun CategoryChips(
+    selected: Category?,
+    error: ValidationError?,
+    onSelect: (Category) -> Unit
+) {
     Section(R.string.form_field_category) {
         Category.entries.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -329,7 +409,11 @@ private fun CategoryChips(selected: Category?, error: ValidationError?, onSelect
             }
         }
         if (error != null) {
-            Text(stringResource(error.message()), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            Text(
+                stringResource(error.message()),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
@@ -362,7 +446,10 @@ private fun SubmitBar(create: Boolean, submitting: Boolean, onSubmit: () -> Unit
             .navigationBarsPadding(),
     ) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
             Text(
                 stringResource(R.string.form_helper),
                 style = MaterialTheme.typography.bodySmall,
@@ -406,7 +493,8 @@ private fun FormPreview(state: FormUiState) {
             onSeverityChange = {},
             onLocationLabelChange = {},
             onFieldBlur = {},
-            onAddPhoto = {},
+            onTakePhoto = {},
+            onPickPhoto = {},
             onReview = {},
             onSubmit = {},
         )
@@ -417,7 +505,12 @@ private fun FormPreview(state: FormUiState) {
 @Composable
 private fun NewReportPreview() = FormPreview(
     FormUiState(
-        fields = FormFields(title = "Hydraulic press leaking", category = Category.EQUIPMENT_FAILURE, severity = Severity.HIGH, loaded = true),
+        fields = FormFields(
+            title = "Hydraulic press leaking",
+            category = Category.EQUIPMENT_FAILURE,
+            severity = Severity.HIGH,
+            loaded = true
+        ),
         photos = previewIncident().photos,
         isLoading = false,
     ),
@@ -443,7 +536,12 @@ private fun ErrorsPreview() = FormPreview(
 private fun EditPreview() = FormPreview(
     FormUiState(
         mode = FormMode.EDIT,
-        fields = FormFields(title = "Hydraulic press leaking", category = Category.EQUIPMENT_FAILURE, locationLabel = "Bay 3", loaded = true),
+        fields = FormFields(
+            title = "Hydraulic press leaking",
+            category = Category.EQUIPMENT_FAILURE,
+            locationLabel = "Bay 3",
+            loaded = true
+        ),
         photos = previewIncident().photos,
         isLoading = false,
     ),
