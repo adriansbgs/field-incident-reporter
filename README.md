@@ -33,6 +33,11 @@ cd android
 ## Decisions & trade-offs
 
 - **json-server pinned to 0.17.4.** v1 removed `--delay`, which is the only way to make loading states visible on a phone. Browser throttling doesn't apply to an Android client.
+- **One Gradle module (`:app`), organised as `core` / `domain` / `data` / `feature` packages.** Splitting into multiple modules buys build isolation a five-screen prototype can't use. The package boundaries make a later split mechanical.
+- **KSP, not kapt.** AGP 9 compiles Kotlin itself and has no place for kapt. KSP also runs Hilt and Room's code generation faster.
+- **compileSdk 37, targetSdk 36.** The current AndroidX releases compile against API 37. Runtime behaviour stays opted in at 36.
+- **Cleartext HTTP in debug builds only.** json-server speaks plain HTTP, so the exception lives in `src/debug/AndroidManifest.xml`. Release builds stay HTTPS-only.
+- **Light theme only, applied unconditionally.** Dark mode is a non-goal. Rather than ship a half-built dark palette, a phone in dark mode gets the light app with dark status-bar icons. Every colour comes from one theme file, so adding a dark scheme later means changing one palette, not every screen.
 
 ## Non-goals
 

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- json-server speaks plain HTTP. Allowed in debug builds only; release stays HTTPS-only. -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>
