@@ -39,6 +39,8 @@ cd android
 - **Cleartext HTTP in debug builds only.** json-server speaks plain HTTP, so the exception lives in `src/debug/AndroidManifest.xml`. Release builds stay HTTPS-only.
 - **One pending change per incident, not an outbox table.** Two offline edits collapse into one, and a delete replaces a pending edit. Deleting a report that never reached the server is a local-only delete with no network call. The server only ever needs an incident's latest state. Keeping one change per record removes a whole class of ordering bugs that a general outbox would have to solve.
 - **Client-generated UUIDs.** A report created offline has its permanent id from the first moment. There's no temporary id to rewrite when it reaches the server, which accepts the id the app sends.
+- **Photos sync as metadata only; the bytes stay on the phone.** json-server accepts no multipart uploads, and base64 blobs in `db.json` would model the problem badly. `fileName` is the contract. Real upload is additive: an upload step before the incident `POST`, plus a `remoteUrl` on each photo.
+- **Every photo records its source, `CAMERA` or `GALLERY`.** An in-app capture was taken at the scene, at a known time. A picked image could be any file from any day. Both code paths exist anyway, so recording which one ran is free, and it lets an operator weigh the evidence instead of assuming it.
 - **Light theme only, applied unconditionally.** Dark mode is a non-goal. Rather than ship a half-built dark palette, a phone in dark mode gets the light app with dark status-bar icons. Every colour comes from one theme file, so adding a dark scheme later means changing one palette, not every screen.
 
 ## Non-goals
