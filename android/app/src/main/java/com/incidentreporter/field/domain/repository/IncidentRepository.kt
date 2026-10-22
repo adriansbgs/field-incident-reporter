@@ -38,4 +38,10 @@ interface IncidentRepository {
 
     /** Deletes an open report: at once if the server never saw it, otherwise once the server agrees. */
     suspend fun delete(id: String)
+
+    /** Sends a Failed report again: back to Pending, with a fresh set of tries. */
+    suspend fun retrySync(id: String)
+
+    /** Replaces a Changed on server report with the server's copy, discarding the local edit. A failure is always an AppError. */
+    suspend fun useServerVersion(id: String): Result<Unit>
 }

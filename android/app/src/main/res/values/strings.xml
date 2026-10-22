@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Field Incident Reporter</string>
     <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
 
     <!-- Labels -->
     <string name="severity_low">Low</string>
@@ -55,6 +56,13 @@
     <string name="detail_delete">Delete</string>
     <string name="detail_read_only">Read-only — only open incidents can be edited or deleted.</string>
     <string name="detail_not_found">This incident no longer exists.</string>
+    <string name="detail_delete_title">Delete this incident?</string>
+    <string name="detail_delete_body">It leaves your list now and is removed from the server when you’re online.</string>
+    <string name="detail_failed">Upload failed: %s</string>
+    <string name="detail_retry">Retry</string>
+    <string name="detail_stale">This incident changed on the server after your edit. Using the server version discards your edit.</string>
+    <string name="detail_use_server_version">Use server version</string>
+    <string name="detail_server_version_failed">Couldn’t reach the server. Try again when you’re online.</string>
 
     <!-- Form -->
     <string name="form_title_new">New report</string>

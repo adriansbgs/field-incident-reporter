@@ -59,4 +59,13 @@ class FakeIncidentRepository : IncidentRepository {
     override suspend fun delete(id: String) {
         calls += "delete:$id"
     }
+
+    override suspend fun retrySync(id: String) {
+        calls += "retrySync:$id"
+    }
+
+    override suspend fun useServerVersion(id: String): Result<Unit> {
+        calls += "useServerVersion:$id"
+        return Result.success(Unit)
+    }
 }

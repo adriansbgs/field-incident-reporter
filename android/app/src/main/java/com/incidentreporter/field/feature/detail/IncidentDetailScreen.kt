@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
@@ -19,19 +20,29 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.incidentreporter.field.R
+import com.incidentreporter.field.core.designsystem.ConfirmDialog
 import com.incidentreporter.field.core.designsystem.FieldTheme
 import com.incidentreporter.field.core.designsystem.MessageState
 import com.incidentreporter.field.core.designsystem.PhotoThumb
@@ -51,16 +62,60 @@ import java.time.format.FormatStyle
 @Composable
 fun IncidentDetailScreen(
     onBack: () -> Unit,
+    onEdit: (id: String) -> Unit,
     viewModel: IncidentDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    IncidentDetailScreen(state, onBack)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val resources = LocalResources.current
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                DetailEvent.NavigateBack -> onBack()
+                is DetailEvent.ShowMessage -> snackbarHostState.showSnackbar(resources.getString(event.text))
+            }
+        }
+    }
+
+    IncidentDetailScreen(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        onBack = onBack,
+        onEdit = onEdit,
+        onDelete = { confirmDelete = true },
+        onRetry = viewModel::onRetry,
+        onUseServerVersion = viewModel::onUseServerVersion,
+    )
+
+    if (confirmDelete) {
+        ConfirmDialog(
+            title = stringResource(R.string.detail_delete_title),
+            text = stringResource(R.string.detail_delete_body),
+            confirmLabel = stringResource(R.string.detail_delete),
+            dismissLabel = stringResource(R.string.action_cancel),
+            onConfirm = {
+                confirmDelete = false
+                viewModel.onDelete()
+            },
+            onDismiss = { confirmDelete = false },
+        )
+    }
 }
 
 /** Stateless: draws [state] and reports taps. Previews call this one, since they have no ViewModel. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun IncidentDetailScreen(state: DetailUiState, onBack: () -> Unit) {
+private fun IncidentDetailScreen(
+    state: DetailUiState,
+    snackbarHostState: SnackbarHostState,
+    onBack: () -> Unit,
+    onEdit: (id: String) -> Unit,
+    onDelete: () -> Unit,
+    onRetry: () -> Unit,
+    onUseServerVersion: () -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -72,17 +127,32 @@ private fun IncidentDetailScreen(state: DetailUiState, onBack: () -> Unit) {
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         when (state) {
             DetailUiState.Loading -> Unit
             DetailUiState.NotFound -> MessageState(stringResource(R.string.detail_not_found), body = null, modifier = Modifier.padding(padding))
-            is DetailUiState.Content -> DetailContent(state.incident, Modifier.padding(padding))
+            is DetailUiState.Content -> DetailContent(
+                incident = state.incident,
+                onEdit = { onEdit(state.incident.id) },
+                onDelete = onDelete,
+                onRetry = onRetry,
+                onUseServerVersion = onUseServerVersion,
+                modifier = Modifier.padding(padding),
+            )
         }
     }
 }
 
 @Composable
-private fun DetailContent(incident: Incident, modifier: Modifier) {
+private fun DetailContent(
+    incident: Incident,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onRetry: () -> Unit,
+    onUseServerVersion: () -> Unit,
+    modifier: Modifier,
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = modifier
@@ -108,6 +178,7 @@ private fun DetailContent(incident: Incident, modifier: Modifier) {
                 StatusChip(incident.status)
                 SyncBadge(incident.syncState)
             }
+            SyncProblem(incident, onRetry, onUseServerVersion)
             if (incident.description.isNotBlank()) {
                 Text(incident.description, style = MaterialTheme.typography.bodyLarge)
             }
@@ -116,7 +187,23 @@ private fun DetailContent(incident: Incident, modifier: Modifier) {
             Field(R.string.detail_reported_by, incident.reportedBy)
             Field(R.string.detail_created, timeFormat.format(incident.createdAt))
             Field(R.string.detail_updated, timeFormat.format(incident.updatedAt))
-            Actions(editable = incident.isEditable)
+            Actions(editable = incident.isEditable, onEdit = onEdit, onDelete = onDelete)
+        }
+    }
+}
+
+/** Failed and Changed on server need the technician. The card says what happened and offers the one way out. */
+@Composable
+private fun SyncProblem(incident: Incident, onRetry: () -> Unit, onUseServerVersion: () -> Unit) {
+    val (text, action, onAction) = when (incident.syncState) {
+        SyncState.FAILED -> Triple(stringResource(R.string.detail_failed, incident.lastSyncError.orEmpty()), R.string.detail_retry, onRetry)
+        SyncState.STALE -> Triple(stringResource(R.string.detail_stale), R.string.detail_use_server_version, onUseServerVersion)
+        else -> return
+    }
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(14.dp)) {
+            Text(text, style = MaterialTheme.typography.bodyMedium)
+            OutlinedButton(onClick = onAction, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(action)) }
         }
     }
 }
@@ -142,13 +229,13 @@ private fun locationText(location: IncidentLocation): String {
 
 /** Only OPEN incidents can change. The buttons stay visible and say why they're disabled. */
 @Composable
-private fun Actions(editable: Boolean) {
+private fun Actions(editable: Boolean, onEdit: () -> Unit, onDelete: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = {}, enabled = editable, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+            OutlinedButton(onClick = onEdit, enabled = editable, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.detail_edit))
             }
-            OutlinedButton(onClick = {}, enabled = editable, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+            OutlinedButton(onClick = onDelete, enabled = editable, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.detail_delete))
             }
         }
@@ -161,26 +248,39 @@ private fun Actions(editable: Boolean) {
 private val timeFormat: DateTimeFormatter =
     DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withZone(ZoneId.systemDefault())
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 760)
 @Composable
-private fun OpenIncidentPreview() {
-    FieldTheme { IncidentDetailScreen(DetailUiState.Content(previewIncident()), onBack = {}) }
-}
-
-/** Edit and Delete disabled, with the reason underneath. */
-@Preview(showBackground = true, widthDp = 360, heightDp = 760)
-@Composable
-private fun ReadOnlyIncidentPreview() {
+private fun DetailPreview(state: DetailUiState) {
     FieldTheme {
         IncidentDetailScreen(
-            DetailUiState.Content(previewIncident(status = Status.RESOLVED, syncState = SyncState.STALE, photoCount = 0)),
+            state = state,
+            snackbarHostState = remember { SnackbarHostState() },
             onBack = {},
+            onEdit = {},
+            onDelete = {},
+            onRetry = {},
+            onUseServerVersion = {},
         )
     }
 }
 
+@Preview(showBackground = true, widthDp = 360, heightDp = 760)
+@Composable
+private fun OpenIncidentPreview() = DetailPreview(DetailUiState.Content(previewIncident()))
+
+/** The upload gave up: the card shows why, with Retry. */
+@Preview(showBackground = true, widthDp = 360, heightDp = 760)
+@Composable
+private fun FailedPreview() = DetailPreview(
+    DetailUiState.Content(previewIncident(syncState = SyncState.FAILED).copy(lastSyncError = "Server error (HTTP 503)")),
+)
+
+/** Edit and Delete disabled, with the reason underneath. Changed on server offers the server's version. */
+@Preview(showBackground = true, widthDp = 360, heightDp = 760)
+@Composable
+private fun ReadOnlyIncidentPreview() = DetailPreview(
+    DetailUiState.Content(previewIncident(status = Status.RESOLVED, syncState = SyncState.STALE, photoCount = 0)),
+)
+
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
-private fun NotFoundPreview() {
-    FieldTheme { IncidentDetailScreen(DetailUiState.NotFound, onBack = {}) }
-}
+private fun NotFoundPreview() = DetailPreview(DetailUiState.NotFound)

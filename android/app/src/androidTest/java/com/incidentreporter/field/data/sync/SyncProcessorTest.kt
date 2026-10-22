@@ -187,6 +187,34 @@ class SyncProcessorTest {
     }
 
     @Test
+    fun retrySync_failedRow_syncsAgain() = runTest {
+        submitted("a")
+        api.failNext = httpError(400)
+        processor.syncPending()
+        assertEquals(SyncState.FAILED, state("a"))
+
+        repository.retrySync("a")
+        assertEquals(SyncState.PENDING, state("a"))
+        processor.syncPending()
+
+        assertEquals(SyncState.SYNCED, state("a"))
+        assertNull(error("a"))
+    }
+
+    @Test
+    fun useServerVersion_replacesStaleRow() = runTest {
+        syncedThenEdited("a")
+        api.rows["a"] = api.rows["a"]!!.copy(title = "Theirs", updatedAt = "2030-01-01T00:00:00Z")
+        processor.syncPending()
+
+        assertTrue(repository.useServerVersion("a").isSuccess)
+
+        assertEquals("Theirs", row("a").title)
+        assertEquals(SyncState.SYNCED, state("a"))
+        assertEquals(PendingOp.NONE, op("a"))
+    }
+
+    @Test
     fun staleRow_reEdited_overwritesServer() = runTest {
         // Editing again after seeing "Changed on server" is a deliberate choice, so the technician's version wins.
         syncedThenEdited("a")

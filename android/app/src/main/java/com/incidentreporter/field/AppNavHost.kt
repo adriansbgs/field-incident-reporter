@@ -31,7 +31,10 @@ fun AppNavHost() {
         }
         composable<DetailRoute> {
             // navigateUp, not popBackStack: a double tap on Back can't pop the list and leave a blank screen.
-            IncidentDetailScreen(onBack = { navController.navigateUp() })
+            IncidentDetailScreen(
+                onBack = { navController.navigateUp() },
+                onEdit = { id -> navController.navigate(FormRoute(id)) { launchSingleTop = true } },
+            )
         }
         composable<FormRoute> {
             IncidentFormScreen(

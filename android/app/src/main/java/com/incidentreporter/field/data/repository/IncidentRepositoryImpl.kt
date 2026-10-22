@@ -58,11 +58,7 @@ class IncidentRepositoryImpl @Inject constructor(
         val remote = apiCall { api.list().map { it.toLocal() } }
         val deletedFiles = db.withTransaction {
             val plan = SyncDecision.planReconcile(before + dao.localMeta(), remote.map { it.incident.id }.toSet())
-            remote.filter { it.incident.id in plan.upsert }.forEach { row ->
-                dao.upsert(row.incident)
-                dao.upsertPhotos(row.photos)
-                dao.deletePhotosExcept(row.incident.id, row.photos.map { it.id })
-            }
+            remote.filter { it.incident.id in plan.upsert }.forEach { storeServerRow(it) }
             val gone = plan.delete.toList()
             val names = dao.photoFileNames(gone) // read first: deleting the rows cascades to their photo rows
             dao.delete(gone)
@@ -168,6 +164,26 @@ class IncidentRepositoryImpl @Inject constructor(
             Collapse.HardDeleteLocally -> photoStore.delete(photos.map { it.fileName })
             is Collapse.Queue -> syncScheduler.requestSync()
         }
+    }
+
+    override suspend fun retrySync(id: String) {
+        dao.markSyncResult(id, SyncState.PENDING, attempts = 0, error = null)
+        syncScheduler.requestSync()
+    }
+
+    override suspend fun useServerVersion(id: String): Result<Unit> = try {
+        val remote = apiCall { api.get(id).toLocal() }
+        db.withTransaction { storeServerRow(remote) }
+        Result.success(Unit)
+    } catch (e: AppError) {
+        Result.failure(e)
+    }
+
+    /** The server's copy becomes the phone's: the row, its photo rows, and none of the photo rows the server dropped. */
+    private suspend fun storeServerRow(row: IncidentWithPhotos) {
+        dao.upsert(row.incident)
+        dao.upsertPhotos(row.photos)
+        dao.deletePhotosExcept(row.incident.id, row.photos.map { it.id })
     }
 
     /** A draft, the only kind of row that gains or loses photos. */
