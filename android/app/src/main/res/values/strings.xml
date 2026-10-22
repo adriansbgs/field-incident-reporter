@@ -1,3 +1,43 @@
 <resources>
     <string name="app_name">Field Incident Reporter</string>
+
+    <!-- Labels -->
+    <string name="severity_low">Low</string>
+    <string name="severity_medium">Medium</string>
+    <string name="severity_high">High</string>
+    <string name="severity_critical">Critical</string>
+    <string name="status_open">Open</string>
+    <string name="status_in_progress">In progress</string>
+    <string name="status_resolved">Resolved</string>
+    <string name="category_equipment_failure">Equipment failure</string>
+    <string name="category_road_hazard">Road hazard</string>
+    <string name="category_electrical">Electrical</string>
+    <string name="category_plumbing">Plumbing</string>
+    <string name="category_structural">Structural</string>
+    <string name="category_other">Other</string>
+    <string name="sync_pending">Pending</string>
+    <string name="sync_failed">Failed</string>
+    <string name="sync_stale">Changed on server</string>
+
+    <!-- List -->
+    <string name="list_title">Incidents</string>
+    <string name="list_show_filters">Show filters</string>
+    <string name="list_hide_filters">Hide filters</string>
+    <plurals name="list_pending_banner">
+        <item quantity="one">%d report waiting to upload</item>
+        <item quantity="other">%d reports waiting to upload</item>
+    </plurals>
+    <plurals name="list_photo_count">
+        <item quantity="one">%d photo</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
+    <string name="list_no_photos">no photos</string>
+    <string name="list_empty_title">No incidents yet</string>
+    <string name="list_empty_body">Reports you file will appear here.</string>
+    <string name="list_empty_filtered_title">No incidents match these filters</string>
+    <string name="list_clear_filters">Clear filters</string>
+    <string name="list_error_title">Couldn’t load incidents</string>
+    <string name="list_error_body">Check your connection and try again.</string>
+    <string name="list_retry">Retry</string>
+    <string name="list_refresh_failed">Couldn’t refresh. Showing incidents saved on this device.</string>
 </resources>

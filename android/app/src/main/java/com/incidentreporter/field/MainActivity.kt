@@ -6,10 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
 import com.incidentreporter.field.core.designsystem.FieldTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -24,8 +20,7 @@ class MainActivity : ComponentActivity() {
 
     setContent {
       FieldTheme {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        }
+        AppNavHost()
       }
     }
   }
