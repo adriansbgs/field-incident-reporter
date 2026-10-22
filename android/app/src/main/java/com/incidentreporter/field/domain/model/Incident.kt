@@ -67,3 +67,9 @@ data class IncidentInput(
     val location: IncidentLocation? = null,
     val photoCount: Int = 0,
 )
+
+/** A photo on its way into a draft: a camera shot already written to disk, or a gallery pick. */
+sealed interface PhotoInput {
+    data class Captured(val photoId: String, val file: File) : PhotoInput
+    data class Picked(val uri: String) : PhotoInput
+}

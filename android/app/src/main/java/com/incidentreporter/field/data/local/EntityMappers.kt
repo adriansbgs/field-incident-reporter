@@ -67,3 +67,15 @@ fun newDraftEntity(id: String, now: Long): IncidentEntity = IncidentEntity(
     lastSyncError = null,
     serverUpdatedAt = null,
 )
+
+fun IncidentLocation.toColumns(): LocationColumns = LocationColumns(latitude, longitude, label, source)
+
+fun Photo.toEntity(incidentId: String): PhotoEntity = PhotoEntity(
+    id = id,
+    incidentId = incidentId,
+    fileName = fileName,
+    source = source,
+    capturedAt = capturedAt.toEpochMilli(),
+    widthPx = widthPx,
+    heightPx = heightPx,
+)

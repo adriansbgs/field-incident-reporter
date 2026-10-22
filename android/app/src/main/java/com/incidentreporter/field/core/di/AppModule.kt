@@ -8,6 +8,7 @@ import com.incidentreporter.field.data.photo.PhotoStore
 import com.incidentreporter.field.data.remote.AppJson
 import com.incidentreporter.field.data.remote.IncidentApi
 import com.incidentreporter.field.data.repository.IncidentRepositoryImpl
+import com.incidentreporter.field.data.sync.SyncScheduler
 import com.incidentreporter.field.domain.repository.IncidentRepository
 import dagger.Module
 import dagger.Provides
@@ -18,6 +19,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.io.File
+import java.time.Clock
 import javax.inject.Singleton
 
 @Module
@@ -39,9 +41,15 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun photoStore(@ApplicationContext context: Context): PhotoStore =
-        PhotoStore(File(context.filesDir, "photos").apply { mkdirs() })
+    fun photoStore(@ApplicationContext context: Context, clock: Clock): PhotoStore =
+        PhotoStore(File(context.filesDir, "photos").apply { mkdirs() }, context.contentResolver, clock)
 
     @Provides
     fun incidentRepository(impl: IncidentRepositoryImpl): IncidentRepository = impl
+
+    @Provides
+    fun clock(): Clock = Clock.systemUTC()
+
+    @Provides
+    fun syncScheduler(): SyncScheduler = SyncScheduler {} 
 }

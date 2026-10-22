@@ -17,6 +17,7 @@ import com.incidentreporter.field.domain.model.SyncState
 fun entity(
     id: String,
     isDraft: Boolean = false,
+    status: Status = Status.OPEN,
     pendingOp: PendingOp = PendingOp.NONE,
     syncState: SyncState = SyncState.SYNCED,
     createdAt: Long = 0,
@@ -27,7 +28,7 @@ fun entity(
     description = "",
     category = Category.OTHER,
     severity = Severity.MEDIUM,
-    status = Status.OPEN,
+    status = status,
     location = LocationColumns(latitude = null, longitude = null, label = "Bay 3", source = LocationSource.MANUAL),
     reportedBy = REPORTED_BY,
     createdAt = createdAt,

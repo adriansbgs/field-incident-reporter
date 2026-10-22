@@ -1,5 +1,6 @@
 package com.incidentreporter.field.data.repository
 
+import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -10,6 +11,7 @@ import com.incidentreporter.field.data.photo.PhotoStore
 import com.incidentreporter.field.domain.model.PendingOp
 import com.incidentreporter.field.domain.model.SyncState
 import com.incidentreporter.field.testing.FakeIncidentApi
+import com.incidentreporter.field.testing.FakeSyncScheduler
 import com.incidentreporter.field.testing.entity
 import com.incidentreporter.field.testing.photo
 import com.incidentreporter.field.testing.serverIncident
@@ -28,6 +30,7 @@ import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import java.io.File
 import java.io.IOException
+import java.time.Clock
 
 /** The pull: server rows land in Room, and nothing the phone still owes the server is lost. */
 @RunWith(AndroidJUnit4::class)
@@ -44,10 +47,12 @@ class IncidentRepositoryRefreshTest {
 
     @Before
     fun setUp() {
-        db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), FieldDatabase::class.java).build()
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val clock = Clock.systemUTC()
+        db = Room.inMemoryDatabaseBuilder(context, FieldDatabase::class.java).build()
         dao = db.incidentDao()
         photoDir = tmp.newFolder("photos")
-        repository = IncidentRepositoryImpl(db, api, PhotoStore(photoDir))
+        repository = IncidentRepositoryImpl(db, api, PhotoStore(photoDir, context.contentResolver, clock), clock, FakeSyncScheduler())
     }
 
     @After

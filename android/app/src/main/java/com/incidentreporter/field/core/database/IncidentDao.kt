@@ -45,4 +45,13 @@ interface IncidentDao {
 
     @Query("DELETE FROM photos WHERE incidentId = :incidentId AND id NOT IN (:keepIds)")
     suspend fun deletePhotosExcept(incidentId: String, keepIds: List<String>)
+
+    @Query("DELETE FROM incidents WHERE isDraft = 1")
+    suspend fun deleteDrafts()
+
+    @Query("SELECT fileName FROM photos")
+    suspend fun allPhotoFileNames(): List<String>
+
+    @Query("DELETE FROM photos WHERE id = :id")
+    suspend fun deletePhoto(id: String)
 }
