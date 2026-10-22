@@ -41,6 +41,8 @@ cd android
 - **Client-generated UUIDs.** A report created offline has its permanent id from the first moment. There's no temporary id to rewrite when it reaches the server, which accepts the id the app sends.
 - **Photos sync as metadata only; the bytes stay on the phone.** json-server accepts no multipart uploads, and base64 blobs in `db.json` would model the problem badly. `fileName` is the contract. Real upload is additive: an upload step before the incident `POST`, plus a `remoteUrl` on each photo.
 - **Every photo records its source, `CAMERA` or `GALLERY`.** An in-app capture was taken at the scene, at a known time. A picked image could be any file from any day. Both code paths exist anyway, so recording which one ran is free, and it lets an operator weigh the evidence instead of assuming it.
+- **Room is the single source of truth.** Screens observe the database, never the network. A pull writes server rows into Room and the list updates from there, so with no signal the app shows its last-known list instead of an error.
+- **A pull never overwrites what the phone still owes the server.** Drafts and rows with a pending change are left alone. Everything else mirrors the server, deletions included. A row that was pending when the pull started stays protected even if its upload lands mid-pull, so a report that just synced can't be deleted along with its photos, which exist only on the phone.
 - **Light theme only, applied unconditionally.** Dark mode is a non-goal. Rather than ship a half-built dark palette, a phone in dark mode gets the light app with dark status-bar icons. Every colour comes from one theme file, so adding a dark scheme later means changing one palette, not every screen.
 
 ## Non-goals
