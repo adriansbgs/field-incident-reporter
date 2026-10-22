@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Field Incident Reporter</string>
+    <string name="action_back">Back</string>
 
     <!-- Labels -->
     <string name="severity_low">Low</string>
@@ -40,4 +41,17 @@
     <string name="list_error_body">Check your connection and try again.</string>
     <string name="list_retry">Retry</string>
     <string name="list_refresh_failed">Couldn’t refresh. Showing incidents saved on this device.</string>
+
+    <!-- Detail -->
+    <string name="detail_photo">Photo %1$d of %2$d</string>
+    <string name="detail_category">Category</string>
+    <string name="detail_location">Location</string>
+    <string name="detail_coordinates">%1$.5f, %2$.5f</string>
+    <string name="detail_reported_by">Reported by</string>
+    <string name="detail_created">Reported</string>
+    <string name="detail_updated">Last updated</string>
+    <string name="detail_edit">Edit</string>
+    <string name="detail_delete">Delete</string>
+    <string name="detail_read_only">Read-only — only open incidents can be edited or deleted.</string>
+    <string name="detail_not_found">This incident no longer exists.</string>
 </resources>

@@ -44,6 +44,7 @@ cd android
 - **Room is the single source of truth.** Screens observe the database, never the network. A pull writes server rows into Room and the list updates from there, so with no signal the app shows its last-known list instead of an error.
 - **A pull never overwrites what the phone still owes the server.** Drafts and rows with a pending change are left alone. Everything else mirrors the server, deletions included. A row that was pending when the pull started stays protected even if its upload lands mid-pull, so a report that just synced can't be deleted along with its photos, which exist only on the phone.
 - **Only abnormal sync states get a badge.** A synced row shows nothing. Pending, Failed and Changed on server each get an outlined badge, and the banner counts exactly the rows wearing Pending. When everything has uploaded, the list is quiet.
+- **Only open incidents can be edited or deleted.** In progress and Resolved belong to the operator. The detail screen keeps Edit and Delete visible but disabled, with one line saying why, so nobody hunts for a button that seems to have vanished.
 - **Light theme only, applied unconditionally.** Dark mode is a non-goal. Rather than ship a half-built dark palette, a phone in dark mode gets the light app with dark status-bar icons. Every colour comes from one theme file, so adding a dark scheme later means changing one palette, not every screen.
 
 ## Non-goals
