@@ -32,6 +32,8 @@ cd android
 
 `adb reverse` lets the phone reach the server at `localhost:3000` over USB, with no Wi-Fi setup. On an emulator, either run the same `adb reverse`, or change `BASE_URL` in `android/app/build.gradle.kts` to `http://10.0.2.2:3000/`.
 
+The build needs JDK 17 or newer, and the Android SDK. Opening `android/` once in Android Studio finds both; on the command line, set `JAVA_HOME` and `ANDROID_HOME`.
+
 ## Tests
 
 ```bash
