@@ -39,7 +39,7 @@
     <string name="list_empty_filtered_title">No incidents match these filters</string>
     <string name="list_clear_filters">Clear filters</string>
     <string name="list_error_title">Couldn’t load incidents</string>
-    <string name="list_error_body">Check your connection and try again.</string>
+    <string name="list_error_body">Check your connection and try again. You can still report incidents. They upload once you’re back online.</string>
     <string name="list_retry">Retry</string>
     <string name="list_refresh_failed">Couldn’t refresh. Showing incidents saved on this device.</string>
     <string name="list_report">Report incident</string>
