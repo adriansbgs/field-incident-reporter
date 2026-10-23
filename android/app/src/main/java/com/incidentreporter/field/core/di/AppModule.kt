@@ -4,12 +4,14 @@ import android.content.Context
 import androidx.room.Room
 import com.incidentreporter.field.BuildConfig
 import com.incidentreporter.field.core.database.FieldDatabase
+import com.incidentreporter.field.data.location.FusedCurrentLocation
 import com.incidentreporter.field.data.photo.PhotoStore
 import com.incidentreporter.field.data.remote.AppJson
 import com.incidentreporter.field.data.remote.IncidentApi
 import com.incidentreporter.field.data.repository.IncidentRepositoryImpl
 import com.incidentreporter.field.data.sync.SyncScheduler
 import com.incidentreporter.field.data.sync.WorkManagerSyncScheduler
+import com.incidentreporter.field.domain.repository.CurrentLocation
 import com.incidentreporter.field.domain.repository.IncidentRepository
 import dagger.Module
 import dagger.Provides
@@ -53,4 +55,7 @@ object AppModule {
 
     @Provides
     fun syncScheduler(impl: WorkManagerSyncScheduler): SyncScheduler = impl
+
+    @Provides
+    fun currentLocation(impl: FusedCurrentLocation): CurrentLocation = impl
 }

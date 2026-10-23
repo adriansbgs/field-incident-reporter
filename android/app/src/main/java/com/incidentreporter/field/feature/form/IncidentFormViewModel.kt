@@ -14,6 +14,7 @@ import com.incidentreporter.field.domain.model.LocationSource
 import com.incidentreporter.field.domain.model.Photo
 import com.incidentreporter.field.domain.model.PhotoInput
 import com.incidentreporter.field.domain.model.Severity
+import com.incidentreporter.field.domain.repository.CurrentLocation
 import com.incidentreporter.field.domain.repository.IncidentRepository
 import com.incidentreporter.field.domain.usecase.FormField
 import com.incidentreporter.field.domain.usecase.ValidationError
@@ -65,6 +66,9 @@ fun FormFields.toInput(photoCount: Int): IncidentInput = IncidentInput(
 /** CREATE fills in a draft, EDIT changes a submitted report. */
 enum class FormMode { CREATE, EDIT }
 
+/** The GPS half of the location: not asked yet, waiting for a fix, got one, or none to be had. */
+enum class LocationStatus { IDLE, ACQUIRING, ACQUIRED, UNAVAILABLE }
+
 data class FormUiState(
     val mode: FormMode = FormMode.CREATE,
     val fields: FormFields = FormFields(),
@@ -73,6 +77,7 @@ data class FormUiState(
     val isLoading: Boolean = true,
     val isSubmitting: Boolean = false,
     val reviewing: Photo? = null,
+    val locationStatus: LocationStatus = LocationStatus.IDLE,
 ) {
     /** Anything that leaving would throw away. */
     val hasContent: Boolean = photos.isNotEmpty() || fields.title.isNotBlank() || fields.description.isNotBlank()
@@ -87,6 +92,7 @@ sealed interface FormEvent {
 class IncidentFormViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val repository: IncidentRepository,
+    private val currentLocation: CurrentLocation,
 ) : ViewModel() {
 
     // Navigation stores FormRoute's arguments under their property names.
@@ -129,6 +135,25 @@ class IncidentFormViewModel @Inject constructor(
     fun onSeverityChange(severity: Severity) = updateFields { it.copy(severity = severity) }
 
     fun onLocationLabelChange(value: String) = updateFields { it.copy(locationLabel = value) }
+
+    /**
+     * The location permission's answer, already granted or just given. A new report without coordinates asks for one fix.
+     * An edit keeps the location it was reported with, and a second tap while a fix is coming does nothing.
+     */
+    fun onLocationPermissionResult(granted: Boolean) {
+        val now = form.value
+        if (now.isLoading || now.mode == FormMode.EDIT || now.fields.latitude != null || now.locationStatus == LocationStatus.ACQUIRING) return
+        if (!granted) {
+            form.update { it.copy(locationStatus = LocationStatus.UNAVAILABLE) }
+            return
+        }
+        form.update { it.copy(locationStatus = LocationStatus.ACQUIRING) }
+        viewModelScope.launch {
+            val fix = currentLocation.get()
+            if (fix != null) updateFields { it.copy(latitude = fix.latitude, longitude = fix.longitude) }
+            form.update { it.copy(locationStatus = if (fix != null) LocationStatus.ACQUIRED else LocationStatus.UNAVAILABLE) }
+        }
+    }
 
     /** A field's error shows once the technician has left it, not while they're still typing it. */
     fun onFieldBlur(field: FormField) = updateFields { it.copy(touched = it.touched + field) }

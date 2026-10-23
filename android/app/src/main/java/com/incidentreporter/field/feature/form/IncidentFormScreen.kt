@@ -1,11 +1,14 @@
 package com.incidentreporter.field.feature.form
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +34,9 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,6 +55,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,19 +64,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.incidentreporter.field.R
 import com.incidentreporter.field.core.designsystem.ConfirmDialog
+import com.incidentreporter.field.core.designsystem.FieldPalette
 import com.incidentreporter.field.core.designsystem.FieldTheme
 import com.incidentreporter.field.core.designsystem.PhotoReviewOverlay
 import com.incidentreporter.field.core.designsystem.PhotoThumb
@@ -100,6 +110,16 @@ fun IncidentFormScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) viewModel.onPhotoPicked(uri.toString())
         }
+    val context = LocalContext.current
+    fun hasLocationPermission() = LOCATION_PERMISSIONS.any { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
+    // Asked only from "Use my location", never on open, where the prompt would land on top of the keyboard. Approximate counts too.
+    val requestLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+        viewModel.onLocationPermissionResult(results.values.any { it })
+    }
+    // Once the permission is granted, every new report gets its fix without a tap.
+    LaunchedEffect(state.isLoading) {
+        if (!state.isLoading && hasLocationPermission()) viewModel.onLocationPermissionResult(true)
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -129,6 +149,9 @@ fun IncidentFormScreen(
         onCategoryChange = viewModel::onCategoryChange,
         onSeverityChange = viewModel::onSeverityChange,
         onLocationLabelChange = viewModel::onLocationLabelChange,
+        onUseMyLocation = {
+            if (hasLocationPermission()) viewModel.onLocationPermissionResult(true) else requestLocation.launch(LOCATION_PERMISSIONS)
+        },
         onFieldBlur = viewModel::onFieldBlur,
         onTakePhoto = onTakePhoto,
         onPickPhoto = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
@@ -177,6 +200,7 @@ private fun IncidentFormScreen(
     onCategoryChange: (Category) -> Unit,
     onSeverityChange: (Severity) -> Unit,
     onLocationLabelChange: (String) -> Unit,
+    onUseMyLocation: () -> Unit,
     onFieldBlur: (FormField) -> Unit,
     onTakePhoto: () -> Unit,
     onPickPhoto: () -> Unit,
@@ -246,13 +270,14 @@ private fun IncidentFormScreen(
                 )
                 CategoryChips(fields.category, state.errors[FormField.CATEGORY], onCategoryChange)
                 SeverityButtons(fields.severity, onSeverityChange)
-                FormTextField(
-                    value = fields.locationLabel,
-                    onValueChange = onLocationLabelChange,
-                    label = R.string.form_field_location,
+                LocationSection(
+                    fields = fields,
+                    status = state.locationStatus,
+                    canLocate = create,
                     error = state.errors[FormField.LOCATION],
+                    onUseMyLocation = onUseMyLocation,
+                    onLabelChange = onLocationLabelChange,
                     onBlur = { onFieldBlur(FormField.LOCATION) },
-                    placeholder = stringResource(R.string.form_location_placeholder),
                 )
             }
         }
@@ -442,6 +467,81 @@ private fun SeverityButtons(selected: Severity, onSelect: (Severity) -> Unit) {
     }
 }
 
+/** GPS when there is a fix, and the place label always: coordinates alone don't say which bay or which floor. */
+@Composable
+private fun LocationSection(
+    fields: FormFields,
+    status: LocationStatus,
+    canLocate: Boolean,
+    error: ValidationError?,
+    onUseMyLocation: () -> Unit,
+    onLabelChange: (String) -> Unit,
+    onBlur: () -> Unit,
+) {
+    Section(R.string.form_field_location) {
+        if (fields.latitude != null || canLocate) LocationRow(fields, status, onUseMyLocation)
+        FormTextField(
+            value = fields.locationLabel,
+            onValueChange = onLabelChange,
+            label = R.string.form_field_place,
+            error = error,
+            onBlur = onBlur,
+            placeholder = stringResource(R.string.form_location_placeholder),
+        )
+    }
+}
+
+/** The coordinates with a GPS tag, a fix on its way, or the button that asks for one. */
+@Composable
+private fun LocationRow(fields: FormFields, status: LocationStatus, onUseMyLocation: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        Icon(Icons.Outlined.Place, contentDescription = null, modifier = Modifier.size(19.dp))
+        val latitude = fields.latitude
+        val longitude = fields.longitude
+        when {
+            latitude != null && longitude != null -> {
+                Text(
+                    stringResource(R.string.detail_coordinates, latitude, longitude),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    stringResource(R.string.form_gps),
+                    color = FieldPalette.severityLow.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier
+                        .background(FieldPalette.severityLow.container, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+            }
+            status == LocationStatus.ACQUIRING -> {
+                Text(stringResource(R.string.form_locating), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+            }
+            else -> Column(Modifier.weight(1f)) {
+                if (status == LocationStatus.UNAVAILABLE) {
+                    Text(
+                        stringResource(R.string.form_location_unavailable),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = onUseMyLocation, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.form_use_location))
+                }
+            }
+        }
+    }
+}
+
 /** Pinned above the keyboard, so Submit is reachable without scrolling while typing with gloves on. */
 @Composable
 private fun SubmitBar(create: Boolean, submitting: Boolean, onSubmit: () -> Unit) {
@@ -476,6 +576,8 @@ private fun SubmitBar(create: Boolean, submitting: Boolean, onSubmit: () -> Unit
     }
 }
 
+private val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+
 @StringRes
 private fun ValidationError.message(): Int = when (this) {
     ValidationError.TITLE_REQUIRED -> R.string.form_error_title_required
@@ -498,6 +600,7 @@ private fun FormPreview(state: FormUiState) {
             onCategoryChange = {},
             onSeverityChange = {},
             onLocationLabelChange = {},
+            onUseMyLocation = {},
             onFieldBlur = {},
             onTakePhoto = {},
             onPickPhoto = {},
@@ -515,7 +618,9 @@ private fun NewReportPreview() = FormPreview(
             title = "Hydraulic press leaking",
             category = Category.EQUIPMENT_FAILURE,
             severity = Severity.HIGH,
-            loaded = true
+            loaded = true,
+            latitude = -0.9471,
+            longitude = 100.4172,
         ),
         photos = previewIncident().photos,
         isLoading = false,
@@ -552,3 +657,8 @@ private fun EditPreview() = FormPreview(
         isLoading = false,
     ),
 )
+
+/** No fix, or no permission: the reason, the button to try again, and the place label underneath. */
+@Preview(showBackground = true, widthDp = 360, heightDp = 900)
+@Composable
+private fun LocationUnavailablePreview() = FormPreview(FormUiState(isLoading = false, locationStatus = LocationStatus.UNAVAILABLE))

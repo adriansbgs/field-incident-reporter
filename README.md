@@ -81,6 +81,12 @@ cd android
   - The draft is created by the first shot, so opening the camera and backing out leaves nothing behind.
   - Back with photos asks once before discarding them.
 - **The camera screen is locked to portrait, but its photos aren't.** The controls never jump around, and the rest of the app still rotates. CameraX's `RotationProvider` follows how the phone is physically held, so a sideways shot is saved upright.
+- **Location comes from Play Services, because it's the least code.** One `getCurrentLocation` call picks GPS, Wi-Fi or the mobile network by itself. With a 10-second cap, it returns "no fix" instead of leaving the form waiting.
+- **The location permission is asked once, in context, and then never again.**
+  - The form doesn't prompt when it opens, because the dialog would land on top of the keyboard.
+  - "Use my location" asks. Once granted, every new report fills in its position without a tap.
+  - Approximate location counts as a yes.
+- **Location never blocks a report.** A denial, no fix, or Location switched off all lead to the same place: a short note, and a Place field that satisfies the form on its own. An edit keeps the location the report was made with.
 - **Light theme only, applied unconditionally.** Dark mode is a non-goal. Rather than ship a half-built dark palette, a phone in dark mode gets the light app with dark status-bar icons. Every colour comes from one theme file, so adding a dark scheme later means changing one palette, not every screen.
 
 ## Non-goals

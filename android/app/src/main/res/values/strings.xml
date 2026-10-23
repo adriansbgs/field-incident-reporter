@@ -78,6 +78,11 @@
     <string name="form_field_severity">Severity</string>
     <string name="form_field_location">Location</string>
     <string name="form_location_placeholder">Describe the place, e.g. Bay 3, South Workshop</string>
+    <string name="form_field_place">Place</string>
+    <string name="form_use_location">Use my location</string>
+    <string name="form_locating">Getting your location…</string>
+    <string name="form_location_unavailable">Location unavailable — describe the place below</string>
+    <string name="form_gps">GPS</string>
     <string name="form_helper">Saved on your device first. Uploads on its own when you have signal.</string>
     <string name="form_submit">Submit report</string>
     <string name="form_save">Save changes</string>
