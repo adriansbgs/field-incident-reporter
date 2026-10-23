@@ -36,11 +36,7 @@ fun AppNavHost() {
                         launchSingleTop = true
                     }
                 },
-                onOpenForm = { id ->
-                    navController.navigate(FormRoute(id)) {
-                        launchSingleTop = true
-                    }
-                },
+                onReport = { navController.navigate(CaptureRoute()) { launchSingleTop = true } },
             )
         }
         composable<DetailRoute> {
@@ -64,7 +60,16 @@ fun AppNavHost() {
             )
         }
         composable<CaptureRoute> {
-            CaptureScreen(onClose = { navController.navigateUp() })
+            CaptureScreen(
+                // The camera leaves the back stack, so Back from the new report's form goes to the list.
+                onOpenForm = { id ->
+                    navController.navigate(FormRoute(id)) {
+                        popUpTo<CaptureRoute> { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onBack = { navController.navigateUp() },
+            )
         }
     }
 }

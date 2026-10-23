@@ -2,24 +2,27 @@ package com.incidentreporter.field.feature.capture
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.camera.compose.CameraXViewfinder
+import androidx.camera.core.RotationProvider
 import androidx.camera.core.SurfaceRequest
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,12 +33,15 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.FlashOff
+import androidx.compose.material.icons.outlined.FlashOn
 import androidx.compose.material.icons.outlined.NoPhotography
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.Button
@@ -44,6 +50,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -54,12 +61,14 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -76,8 +85,10 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.incidentreporter.field.R
+import com.incidentreporter.field.core.designsystem.ConfirmDialog
 import com.incidentreporter.field.core.designsystem.FieldPalette
 import com.incidentreporter.field.core.designsystem.FieldTheme
+import com.incidentreporter.field.core.designsystem.PhotoReviewOverlay
 import com.incidentreporter.field.core.designsystem.PhotoThumb
 import com.incidentreporter.field.core.designsystem.previewIncident
 import com.incidentreporter.field.domain.model.MAX_PHOTOS
@@ -85,7 +96,8 @@ import com.incidentreporter.field.domain.model.Photo
 
 @Composable
 fun CaptureScreen(
-    onClose: () -> Unit,
+    onOpenForm: (draftId: String) -> Unit,
+    onBack: () -> Unit,
     viewModel: CaptureViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -112,6 +124,8 @@ fun CaptureScreen(
         viewModel.events.collect { event ->
             when (event) {
                 CaptureEvent.RequestPermission -> requestPermission.launch(Manifest.permission.CAMERA)
+                is CaptureEvent.OpenForm -> onOpenForm(event.draftId)
+                CaptureEvent.Back -> onBack()
                 is CaptureEvent.ShowMessage -> snackbarHostState.showSnackbar(resources.getString(event.text))
             }
         }
@@ -125,20 +139,55 @@ fun CaptureScreen(
     LaunchedEffect(lifecycleOwner, state.access) {
         if (state.access == CameraAccess.GRANTED) viewModel.camera.bind(context, lifecycleOwner)
     }
+    BackHandler(onBack = viewModel::onBack)
     LightSystemBarIcons()
+    LockPortrait(viewModel.camera)
 
     CaptureScreen(
         state = state,
         surfaceRequest = surfaceRequest,
         snackbarHostState = snackbarHostState,
-        onClose = onClose,
+        onClose = viewModel::onBack,
+        onToggleFlash = viewModel::onToggleFlash,
         onShutter = viewModel::onShutter,
         onGallery = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        onProceed = viewModel::onProceed,
+        onReview = viewModel::onReview,
         onAllowCamera = { requestPermission.launch(Manifest.permission.CAMERA) },
         onOpenSettings = {
             context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)))
         },
     )
+
+    state.reviewing?.let { photo ->
+        PhotoReviewOverlay(
+            photo = photo,
+            onClose = { viewModel.onReview(null) },
+            onDelete = viewModel::onDeleteReviewed,
+            onRetake = viewModel::onDeleteReviewed,
+        )
+    }
+    if (state.confirmSkip) {
+        ConfirmDialog(
+            title = stringResource(R.string.capture_skip_title),
+            text = stringResource(R.string.capture_skip_body),
+            confirmLabel = stringResource(R.string.capture_skip_continue),
+            dismissLabel = stringResource(R.string.capture_skip_add),
+            onConfirm = viewModel::onConfirmSkip,
+            onDismiss = viewModel::onDismissDialogs,
+            destructive = false,
+        )
+    }
+    if (state.confirmDiscard) {
+        ConfirmDialog(
+            title = stringResource(R.string.discard_title),
+            text = stringResource(R.string.discard_body),
+            confirmLabel = stringResource(R.string.discard_confirm),
+            dismissLabel = stringResource(R.string.discard_keep),
+            onConfirm = viewModel::onConfirmDiscard,
+            onDismiss = viewModel::onDismissDialogs,
+        )
+    }
 }
 
 /** Light status and navigation bar icons over the dark camera, dark again on the way out. */
@@ -157,6 +206,24 @@ private fun LightSystemBarIcons() {
     }
 }
 
+/** The camera screen stays portrait so its controls never move, and each photo is still saved the way the phone is held. */
+@Composable
+private fun LockPortrait(camera: CameraCaptureHolder) {
+    val activity = LocalActivity.current ?: return
+    // Saved, because turning to portrait can recreate the Activity, and portrait is not what to restore on the way out.
+    val original = rememberSaveable { activity.requestedOrientation }
+    DisposableEffect(activity) {
+        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        val rotation = RotationProvider(activity)
+        val listener = RotationProvider.Listener { camera.setRotation(it) }
+        rotation.addListener(ContextCompat.getMainExecutor(activity), listener)
+        onDispose {
+            rotation.removeListener(listener)
+            if (!activity.isChangingConfigurations) activity.requestedOrientation = original
+        }
+    }
+}
+
 /** Stateless: draws [state] and reports taps. Previews call this one, since they have no ViewModel. */
 @Composable
 private fun CaptureScreen(
@@ -164,14 +231,17 @@ private fun CaptureScreen(
     surfaceRequest: SurfaceRequest?,
     snackbarHostState: SnackbarHostState,
     onClose: () -> Unit,
+    onToggleFlash: () -> Unit,
     onShutter: () -> Unit,
     onGallery: () -> Unit,
+    onProceed: () -> Unit,
+    onReview: (Photo) -> Unit,
     onAllowCamera: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     Scaffold(
-        topBar = { TopBar(onClose) },
-        bottomBar = { BottomBand(state, onShutter, onGallery) },
+        topBar = { TopBar(showFlash = state.hasFlash && state.access == CameraAccess.GRANTED, state.flashOn, onClose, onToggleFlash) },
+        bottomBar = { BottomBand(state, onShutter, onGallery, onProceed, onReview) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color.Black,
         contentWindowInsets = WindowInsets(0), // the viewfinder runs edge to edge, under both bars
@@ -213,7 +283,7 @@ private fun CaptureScreen(
 }
 
 @Composable
-private fun TopBar(onClose: () -> Unit) {
+private fun TopBar(showFlash: Boolean, flashOn: Boolean, onClose: () -> Unit, onToggleFlash: () -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
@@ -230,12 +300,27 @@ private fun TopBar(onClose: () -> Unit) {
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.align(Alignment.Center),
         )
+        if (showFlash) {
+            IconButton(onClick = onToggleFlash, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp)) {
+                Icon(
+                    if (flashOn) Icons.Outlined.FlashOn else Icons.Outlined.FlashOff,
+                    contentDescription = stringResource(if (flashOn) R.string.capture_flash_off else R.string.capture_flash_on),
+                    tint = Color.White,
+                )
+            }
+        }
     }
 }
 
-/** The photo strip, once there is a photo, above the gallery button and the shutter. */
+/** The photo strip, once there is a photo, above the gallery button, the shutter and Skip or Done. */
 @Composable
-private fun BottomBand(state: CaptureUiState, onShutter: () -> Unit, onGallery: () -> Unit) {
+private fun BottomBand(
+    state: CaptureUiState,
+    onShutter: () -> Unit,
+    onGallery: () -> Unit,
+    onProceed: () -> Unit,
+    onReview: (Photo) -> Unit,
+) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -243,22 +328,22 @@ private fun BottomBand(state: CaptureUiState, onShutter: () -> Unit, onGallery: 
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
             .padding(horizontal = 20.dp),
     ) {
-        if (state.photos.isNotEmpty()) PhotoStrip(state.photos)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
+        if (state.photos.isNotEmpty()) PhotoStrip(state.photos, onReview)
+        // A Box, not a Row: the shutter stays centred whatever width Skip or Done takes.
+        Box(
+            Modifier
                 .fillMaxWidth()
                 .height(if (state.photos.isEmpty()) 168.dp else 124.dp),
         ) {
-            GalleryButton(state.galleryEnabled, onGallery)
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.weight(1f)) { ShutterButton(state.shutterEnabled, onShutter) }
-            Spacer(Modifier.size(56.dp)) // balances the gallery button, so the shutter sits in the middle
+            GalleryButton(state.galleryEnabled, onGallery, Modifier.align(Alignment.CenterStart))
+            ShutterButton(state.shutterEnabled, onShutter, Modifier.align(Alignment.Center))
+            ProceedButton(state.photos.size, enabled = !state.isCapturing, onProceed, Modifier.align(Alignment.CenterEnd))
         }
     }
 }
 
 @Composable
-private fun PhotoStrip(photos: List<Photo>) {
+private fun PhotoStrip(photos: List<Photo>, onReview: (Photo) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -272,11 +357,16 @@ private fun PhotoStrip(photos: List<Photo>) {
                 .horizontalScroll(rememberScrollState()),
         ) {
             photos.forEachIndexed { index, photo ->
-                PhotoThumb(photo.file, size = 54.dp, contentDescription = stringResource(R.string.detail_photo, index + 1, photos.size))
+                PhotoThumb(
+                    photo.file,
+                    size = 54.dp,
+                    contentDescription = stringResource(R.string.form_photo, index + 1, photos.size),
+                    modifier = Modifier.clickable { onReview(photo) },
+                )
             }
         }
         Text(
-            stringResource(R.string.form_photo_count, photos.size, MAX_PHOTOS),
+            stringResource(R.string.capture_count, photos.size, MAX_PHOTOS),
             color = Color.White.copy(alpha = 0.68f),
             style = MaterialTheme.typography.labelMedium,
             // TalkBack reads the new count after each shot, without moving focus.
@@ -288,7 +378,7 @@ private fun PhotoStrip(photos: List<Photo>) {
 }
 
 @Composable
-private fun GalleryButton(enabled: Boolean, onClick: () -> Unit) {
+private fun GalleryButton(enabled: Boolean, onClick: () -> Unit, modifier: Modifier) {
     OutlinedIconButton(
         onClick = onClick,
         enabled = enabled,
@@ -299,21 +389,21 @@ private fun GalleryButton(enabled: Boolean, onClick: () -> Unit) {
             contentColor = Color.White,
             disabledContentColor = Color.White.copy(alpha = 0.38f),
         ),
-        modifier = Modifier.size(56.dp),
+        modifier = modifier.size(56.dp),
     ) {
         Icon(Icons.Outlined.PhotoLibrary, contentDescription = stringResource(R.string.photo_from_gallery))
     }
 }
 
 @Composable
-private fun ShutterButton(enabled: Boolean, onClick: () -> Unit) {
+private fun ShutterButton(enabled: Boolean, onClick: () -> Unit, modifier: Modifier) {
     val label = stringResource(R.string.photo_take)
     OutlinedIconButton(
         onClick = onClick,
         enabled = enabled,
         shape = CircleShape,
         border = BorderStroke(3.dp, FieldPalette.cameraShutterRing),
-        modifier = Modifier
+        modifier = modifier
             .size(80.dp)
             .semantics { contentDescription = label },
     ) {
@@ -322,6 +412,36 @@ private fun ShutterButton(enabled: Boolean, onClick: () -> Unit) {
                 .size(62.dp)
                 .background(Color.White.copy(alpha = if (enabled) 1f else 0.38f), CircleShape),
         )
+    }
+}
+
+/** "Skip" before the first photo, "Done (n)" after it. Both lead to the form, and the label says what happens to the photo. */
+@Composable
+private fun ProceedButton(count: Int, enabled: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    val sized = modifier
+        .heightIn(min = 48.dp)
+        .widthIn(min = 86.dp)
+    if (count == 0) {
+        val description = stringResource(R.string.capture_skip_description)
+        OutlinedButton(
+            onClick = onClick,
+            enabled = enabled,
+            border = BorderStroke(1.5.dp, FieldPalette.cameraControlStroke),
+            colors = ButtonDefaults.outlinedButtonColors(containerColor = FieldPalette.cameraControlFill, contentColor = Color.White),
+            modifier = sized.semantics { contentDescription = description },
+        ) {
+            Text(stringResource(R.string.capture_skip))
+        }
+    } else {
+        val description = pluralStringResource(R.plurals.capture_done_description, count, count)
+        Button(
+            onClick = onClick,
+            enabled = enabled,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = FieldPalette.cameraOnWhite),
+            modifier = sized.semantics { contentDescription = description },
+        ) {
+            Text(stringResource(R.string.capture_done, count))
+        }
     }
 }
 
@@ -367,24 +487,27 @@ private fun CapturePreview(state: CaptureUiState) {
             surfaceRequest = null,
             snackbarHostState = remember { SnackbarHostState() },
             onClose = {},
+            onToggleFlash = {},
             onShutter = {},
             onGallery = {},
+            onProceed = {},
+            onReview = {},
             onAllowCamera = {},
             onOpenSettings = {},
         )
     }
 }
 
-/** No photo yet: the hint, and the taller control band. */
+/** No photo yet: the hint, the taller control band, and Skip. */
 @Preview(widthDp = 360, heightDp = 760)
 @Composable
-private fun FirstShotPreview() = CapturePreview(CaptureUiState(access = CameraAccess.GRANTED))
+private fun FirstShotPreview() = CapturePreview(CaptureUiState(access = CameraAccess.GRANTED, hasFlash = true))
 
-/** Five photos: the strip is full and the shutter is off. */
+/** Five photos: the strip is full, the shutter is off, and Done carries the count. */
 @Preview(widthDp = 360, heightDp = 760)
 @Composable
 private fun FullStripPreview() = CapturePreview(
-    CaptureUiState(access = CameraAccess.GRANTED, photos = previewIncident(photoCount = MAX_PHOTOS).photos),
+    CaptureUiState(access = CameraAccess.GRANTED, photos = previewIncident(photoCount = MAX_PHOTOS).photos, hasFlash = true, flashOn = true),
 )
 
 @Preview(widthDp = 360, heightDp = 760)

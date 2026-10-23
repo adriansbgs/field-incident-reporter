@@ -63,7 +63,7 @@ import com.incidentreporter.field.domain.model.SyncState
 @Composable
 fun IncidentListScreen(
     onOpen: (id: String) -> Unit,
-    onOpenForm: (id: String) -> Unit,
+    onReport: () -> Unit,
     viewModel: IncidentListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -74,7 +74,6 @@ fun IncidentListScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is ListEvent.ShowMessage -> snackbarHostState.showSnackbar(resources.getString(event.text))
-                is ListEvent.OpenForm -> onOpenForm(event.incidentId)
             }
         }
     }
@@ -83,7 +82,7 @@ fun IncidentListScreen(
         state = state,
         snackbarHostState = snackbarHostState,
         onOpen = onOpen,
-        onReport = viewModel::onReportClicked,
+        onReport = onReport,
         onToggleFilters = viewModel::onToggleFilters,
         onStatusFilter = viewModel::onStatusFilter,
         onSeverityFilter = viewModel::onSeverityFilter,

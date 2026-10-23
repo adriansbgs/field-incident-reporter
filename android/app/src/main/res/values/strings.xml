@@ -98,6 +98,7 @@
     <string name="review_photo">Photo under review</string>
     <string name="review_close">Close</string>
     <string name="review_delete">Delete photo</string>
+    <string name="review_retake">Retake</string>
 
     <!-- Camera -->
     <string name="photo_take">Take photo</string>
@@ -111,4 +112,18 @@
     <string name="capture_denied_title">Camera access is off</string>
     <string name="capture_denied_body">A photo is the evidence for your report. Turn camera access on in Settings, or attach one from your gallery.</string>
     <string name="capture_open_settings">Open settings</string>
+    <string name="capture_count">%1$d of %2$d · tap to review</string>
+    <string name="capture_flash_on">Turn flash on</string>
+    <string name="capture_flash_off">Turn flash off</string>
+    <string name="capture_skip">Skip</string>
+    <string name="capture_skip_description">Skip photo and continue to the report form</string>
+    <string name="capture_done">Done (%d)</string>
+    <plurals name="capture_done_description">
+        <item quantity="one">Continue to the report form with %d photo</item>
+        <item quantity="other">Continue to the report form with %d photos</item>
+    </plurals>
+    <string name="capture_skip_title">Report without a photo?</string>
+    <string name="capture_skip_body">A photo helps the operator triage faster.</string>
+    <string name="capture_skip_add">Add photo</string>
+    <string name="capture_skip_continue">Continue without</string>
 </resources>

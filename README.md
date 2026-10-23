@@ -75,6 +75,12 @@ cd android
   - The technician never leaves the report. Each shot is written straight into app storage under its final id, and behaviour doesn't depend on whichever camera app the phone ships with.
   - The scope is deliberately small: a viewfinder and still capture at about Full HD, with no image analysis, zoom or tap-to-focus.
   - Capture touches one screen and one class, and `PhotoStore` takes a camera shot and a gallery pick the same way. Swapping to `ActivityResultContracts.TakePicture` would change nothing downstream.
+- **Camera first, because the photo is the perishable part.** A leak spreads and a hazard gets cleared, but a title can be typed later. So "Report incident" opens the camera, and the form comes after the shots. Skip, confirmed once, still allows a report with no photo.
+- **No dialog between shots.**
+  - Each shot saves straight to the draft and lands in the strip. A tap on a thumbnail opens a review with Retake and Delete.
+  - The draft is created by the first shot, so opening the camera and backing out leaves nothing behind.
+  - Back with photos asks once before discarding them.
+- **The camera screen is locked to portrait, but its photos aren't.** The controls never jump around, and the rest of the app still rotates. CameraX's `RotationProvider` follows how the phone is physically held, so a sideways shot is saved upright.
 - **Light theme only, applied unconditionally.** Dark mode is a non-goal. Rather than ship a half-built dark palette, a phone in dark mode gets the light app with dark status-bar icons. Every colour comes from one theme file, so adding a dark scheme later means changing one palette, not every screen.
 
 ## Non-goals

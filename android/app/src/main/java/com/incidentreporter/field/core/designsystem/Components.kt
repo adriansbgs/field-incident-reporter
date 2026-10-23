@@ -182,7 +182,7 @@ fun PhotoThumb(file: File?, size: Dp, modifier: Modifier = Modifier, contentDesc
     }
 }
 
-/** Asks before something that can't be undone. The confirm button is red, because it's the destructive one. */
+/** Asks before going on. When the confirm button destroys something, it's red. */
 @Composable
 fun ConfirmDialog(
     title: String,
@@ -191,6 +191,7 @@ fun ConfirmDialog(
     dismissLabel: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    destructive: Boolean = true,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -199,7 +200,7 @@ fun ConfirmDialog(
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                colors = ButtonDefaults.textButtonColors(contentColor = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary),
                 modifier = Modifier.heightIn(min = 48.dp),
             ) { Text(confirmLabel) }
         },

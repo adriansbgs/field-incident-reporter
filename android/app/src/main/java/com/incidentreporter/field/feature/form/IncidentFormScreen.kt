@@ -137,11 +137,17 @@ fun IncidentFormScreen(
     )
 
     state.reviewing?.let { photo ->
+        // Photos are fixed once a report is submitted, so an edit only looks.
+        val canChange = state.mode == FormMode.CREATE
         PhotoReviewOverlay(
             photo = photo,
             onClose = { viewModel.onReview(null) },
-            // Photos are fixed once a report is submitted, so an edit only looks.
-            onDelete = if (state.mode == FormMode.CREATE) ({ viewModel.onRemovePhoto(photo.id) }) else null,
+            onDelete = if (canChange) ({ viewModel.onRemovePhoto(photo.id) }) else null,
+            // Retake swaps this photo for a new shot: the camera opens on the same draft.
+            onRetake = if (canChange) ({
+                viewModel.onRemovePhoto(photo.id)
+                onTakePhoto()
+            }) else null,
         )
     }
     if (confirmDiscard) {
