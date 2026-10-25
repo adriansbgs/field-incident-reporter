@@ -6,6 +6,10 @@ The app is **offline-first**. Every report is committed to the phone first and u
 
 **Demo video** (1–2 minutes, recorded on a physical phone): [watch on Google Drive](https://drive.google.com/file/d/1NHRJLGsLNrrt-OA9fNhwEV4Rvor63GVD/view?usp=sharing)
 
+| List, offline | Camera first | Form | Detail | Read-only |
+| --- | --- | --- | --- | --- |
+| <img src="docs/screenshots/list.jpg" width="160" alt="Incident list with a report waiting to upload"> | <img src="docs/screenshots/camera.jpg" width="160" alt="Camera opening straight from Report incident"> | <img src="docs/screenshots/form.jpg" width="160" alt="Report form with a photo attached"> | <img src="docs/screenshots/detail.jpg" width="160" alt="Open incident with Edit and Delete"> | <img src="docs/screenshots/read-only.jpg" width="160" alt="Resolved incident with Edit and Delete disabled"> |
+
 ```
 .
 ├── android/   Android app (Kotlin, Jetpack Compose)
