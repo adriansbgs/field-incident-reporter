@@ -4,7 +4,7 @@ An Android app for field technicians who photograph and report physical incident
 
 The app is **offline-first**. Every report is committed to the phone first and uploads in the background, so it works with no signal and with the server down. It is **camera-first**: the photo is the perishable part of a report (the puddle gets mopped, the hazard gets cleared), so the camera opens before the form.
 
-**Demo video** (1–2 minutes, recorded on a physical phone): [watch on Google Drive](https://drive.google.com/file/d/1NHRJLGsLNrrt-OA9fNhwEV4Rvor63GVD/view?usp=sharing)
+**Demo video** (1–2 minutes, recorded on a physical phone): [watch on Google Drive](https://drive.google.com/drive/folders/1TBbI_HrF53To9y0OuQqLtXSSsKHEw3ll?usp=sharing)
 
 | List, offline | Camera first | Form | Detail | Read-only |
 | --- | --- | --- | --- | --- |
@@ -33,6 +33,8 @@ adb reverse tcp:3000 tcp:3000
 cd android
 ./gradlew installDebug
 ```
+
+To skip the build, install the debug APK from [Releases](https://github.com/adriansbgs/field-incident-reporter/releases/latest) with `adb install`, then run the same `adb reverse`.
 
 `adb reverse` lets the phone reach the server at `localhost:3000` over USB, with no Wi-Fi setup. On an emulator, either run the same `adb reverse`, or change `BASE_URL` in `android/app/build.gradle.kts` to `http://10.0.2.2:3000/`.
 
