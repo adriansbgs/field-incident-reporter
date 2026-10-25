@@ -4,7 +4,7 @@ An Android app for field technicians who photograph and report physical incident
 
 The app is **offline-first**. Every report is committed to the phone first and uploads in the background, so it works with no signal and with the server down. It is **camera-first**: the photo is the perishable part of a report (the puddle gets mopped, the hazard gets cleared), so the camera opens before the form.
 
-**Demo video** (1–2 minutes, recorded on a physical phone): _link to be added_
+**Demo video** (1–2 minutes, recorded on a physical phone): [watch on Google Drive](https://drive.google.com/file/d/1NHRJLGsLNrrt-OA9fNhwEV4Rvor63GVD/view?usp=sharing)
 
 ```
 .
